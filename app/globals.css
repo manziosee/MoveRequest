@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Modern Professional Color Palette */
+    --background: 0 0% 98%;
+    --foreground: 204 19% 26%;
+    --card: 0 0% 100%;
+    --card-foreground: 204 19% 26%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 204 19% 26%;
+    
+    /* Primary - Smart Blue */
+    --primary: 217 63% 47%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary - Charcoal Blue */
+    --secondary: 204 19% 63%;
+    --secondary-foreground: 204 19% 26%;
+    
+    /* Muted - Cool Steel */
+    --muted: 205 16% 95%;
+    --muted-foreground: 205 16% 45%;
+    
+    /* Accent - True Cobalt */
+    --accent: 224 100% 41%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 205 16% 90%;
+    --input: 205 16% 90%;
+    --ring: 217 63% 47%;
+    
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    
+    --chart-1: 217 63% 47%;
+    --chart-2: 142 71% 45%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 0 84% 60%;
+    --chart-5: 271 81% 56%;
+    
+    --radius: 8px;
+  }
+  
+  .dark {
+    --background: 204 19% 8%;
+    --foreground: 0 0% 98%;
+    --card: 204 19% 12%;
+    --card-foreground: 0 0% 98%;
+    --popover: 204 19% 12%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 217 63% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 204 19% 20%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 204 19% 15%;
+    --muted-foreground: 205 16% 65%;
+    --accent: 224 100% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 204 19% 20%;
+    --input: 204 19% 20%;
+    --ring: 217 63% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
+  }
+  
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5;
+  }
+  
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-xl border border-white/20;
+  }
+  
+  .animation-fade-in {
+    animation: fadeIn 0.3s ease-in;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animation-slide-in {
+    animation: slideIn 0.4s ease-out;
+  }
+  
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
