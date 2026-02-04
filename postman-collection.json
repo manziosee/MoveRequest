@@ -1,0 +1,741 @@
+{
+  "info": {
+    "name": "MoveRequest API",
+    "description": "Complete API collection for Movement Request Management System",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001/api",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@company.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', response.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@company.com\",\n  \"password\": \"password123\",\n  \"name\": \"New User\",\n  \"department\": \"IT\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@company.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/forgot-password",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "forgot-password"]
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset-token-here\",\n  \"password\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/reset-password",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "reset-password"]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"password\",\n  \"newPassword\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/change-password",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "change-password"]
+            }
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/auth/profile",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "profile"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Movement Requests",
+      "item": [
+        {
+          "name": "Get All Requests",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/requests?page=1&limit=10&status=pending",
+              "host": ["{{base_url}}"],
+              "path": ["requests"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Office Supplies Request\",\n  \"description\": \"Monthly office supplies procurement\",\n  \"department\": \"IT\",\n  \"priority\": \"medium\",\n  \"requestedDate\": \"2024-01-15\",\n  \"items\": [\n    {\n      \"name\": \"Laptop\",\n      \"category\": \"Electronics\",\n      \"quantity\": 2,\n      \"unit\": \"pieces\",\n      \"estimatedCost\": 150000\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/requests",
+              "host": ["{{base_url}}"],
+              "path": ["requests"]
+            }
+          }
+        },
+        {
+          "name": "Get Request by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/requests/1",
+              "host": ["{{base_url}}"],
+              "path": ["requests", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update Request",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Office Supplies Request\",\n  \"description\": \"Updated monthly office supplies procurement\",\n  \"priority\": \"high\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/requests/1",
+              "host": ["{{base_url}}"],
+              "path": ["requests", "1"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"No longer needed\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/requests/1/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["requests", "1", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "Delete Request",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/requests/1",
+              "host": ["{{base_url}}"],
+              "path": ["requests", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get My Requests",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/requests/my-requests",
+              "host": ["{{base_url}}"],
+              "path": ["requests", "my-requests"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Approvals",
+      "item": [
+        {
+          "name": "Get Pending Approvals",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/approvals/pending",
+              "host": ["{{base_url}}"],
+              "path": ["approvals", "pending"]
+            }
+          }
+        },
+        {
+          "name": "Approve Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"Approved for procurement\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/approvals/1/approve",
+              "host": ["{{base_url}}"],
+              "path": ["approvals", "1", "approve"]
+            }
+          }
+        },
+        {
+          "name": "Reject Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"Budget constraints\",\n  \"reason\": \"Insufficient budget for this quarter\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/approvals/1/reject",
+              "host": ["{{base_url}}"],
+              "path": ["approvals", "1", "reject"]
+            }
+          }
+        },
+        {
+          "name": "Bulk Approve",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requestIds\": [1, 2, 3],\n  \"comment\": \"Bulk approval for Q1 requests\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/approvals/bulk-approve",
+              "host": ["{{base_url}}"],
+              "path": ["approvals", "bulk-approve"]
+            }
+          }
+        },
+        {
+          "name": "Get Approval History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/approvals/1/history",
+              "host": ["{{base_url}}"],
+              "path": ["approvals", "1", "history"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/dashboard/stats",
+              "host": ["{{base_url}}"],
+              "path": ["dashboard", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Get Request Trends",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/dashboard/trends?period=6months",
+              "host": ["{{base_url}}"],
+              "path": ["dashboard", "trends"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "6months"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Department Analytics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/dashboard/departments",
+              "host": ["{{base_url}}"],
+              "path": ["dashboard", "departments"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Generate Report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"monthly\",\n  \"format\": \"pdf\",\n  \"dateRange\": {\n    \"start\": \"2024-01-01\",\n    \"end\": \"2024-01-31\"\n  },\n  \"filters\": {\n    \"department\": \"IT\",\n    \"status\": \"approved\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/reports/generate",
+              "host": ["{{base_url}}"],
+              "path": ["reports", "generate"]
+            }
+          }
+        },
+        {
+          "name": "Get Report Templates",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/reports/templates",
+              "host": ["{{base_url}}"],
+              "path": ["reports", "templates"]
+            }
+          }
+        },
+        {
+          "name": "Export Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"csv\",\n  \"data\": \"requests\",\n  \"filters\": {\n    \"status\": \"approved\",\n    \"dateRange\": {\n      \"start\": \"2024-01-01\",\n      \"end\": \"2024-12-31\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/reports/export",
+              "host": ["{{base_url}}"],
+              "path": ["reports", "export"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Users",
+          "item": [
+            {
+              "name": "Get All Users",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/admin/users",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "users"]
+                }
+              }
+            },
+            {
+              "name": "Create User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"newuser@company.com\",\n  \"name\": \"New User\",\n  \"role\": \"employee\",\n  \"department\": \"HR\",\n  \"password\": \"password123\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/users",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "users"]
+                }
+              }
+            },
+            {
+              "name": "Update User Role",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"role\": \"procurement\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/users/1/role",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "users", "1", "role"]
+                }
+              }
+            },
+            {
+              "name": "Delete User",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}/admin/users/1",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "users", "1"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Categories",
+          "item": [
+            {
+              "name": "Get Categories",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/admin/categories",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "categories"]
+                }
+              }
+            },
+            {
+              "name": "Create Category",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Office Furniture\",\n  \"description\": \"Desks, chairs, and office furniture\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/categories",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "categories"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Departments",
+          "item": [
+            {
+              "name": "Get Departments",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/admin/departments",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "departments"]
+                }
+              }
+            },
+            {
+              "name": "Create Department",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Marketing\",\n  \"description\": \"Marketing and Communications\",\n  \"manager\": \"John Doe\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/departments",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "departments"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Files",
+      "item": [
+        {
+          "name": "Upload File",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/files/upload",
+              "host": ["{{base_url}}"],
+              "path": ["files", "upload"]
+            }
+          }
+        },
+        {
+          "name": "Upload File to Request",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/files/upload/1",
+              "host": ["{{base_url}}"],
+              "path": ["files", "upload", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Request Files",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/files/request/1",
+              "host": ["{{base_url}}"],
+              "path": ["files", "request", "1"]
+            }
+          }
+        },
+        {
+          "name": "Download File",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/files/download/1",
+              "host": ["{{base_url}}"],
+              "path": ["files", "download", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/notifications",
+              "host": ["{{base_url}}"],
+              "path": ["notifications"]
+            }
+          }
+        },
+        {
+          "name": "Mark as Read",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{base_url}}/notifications/1/read",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "1", "read"]
+            }
+          }
+        },
+        {
+          "name": "Mark All as Read",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{base_url}}/notifications/mark-all-read",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "mark-all-read"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
