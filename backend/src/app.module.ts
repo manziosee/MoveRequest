@@ -10,6 +10,7 @@ import { AdminModule } from './admin/admin.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { FilesModule } from './common/files.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -32,5 +33,6 @@ import { FilesModule } from './common/files.module';
     DashboardModule,
     FilesModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}
