@@ -7,22 +7,10 @@ import { Toaster } from '@/components/ui/toaster';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Procurement System - Request Management',
+  title: 'MoveRequest - Movement & Procurement Management',
   description: 'Enterprise procurement and movement request management system',
-  openGraph: {
-    images: [
-      {
-        url: 'https://bolt.new/static/og_default.png',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    images: [
-      {
-        url: 'https://bolt.new/static/og_default.png',
-      },
-    ],
+  icons: {
+    icon: '/favicon.ico',
   },
 };
 
