@@ -74,18 +74,23 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     ];
 
     if (user?.role === 'procurement') {
-      baseItems.splice(2, 0, { href: '/approvals', icon: Package, label: 'Approvals' });
-      baseItems.push({ href: '/reports', icon: BarChart3, label: 'Reports' });
+      return [
+        ...baseItems.slice(0, 2),
+        { href: '/approvals', icon: Package, label: 'Approvals' },
+        ...baseItems.slice(2),
+        { href: '/reports', icon: BarChart3, label: 'Reports' }
+      ];
     }
 
     if (user?.role === 'admin') {
-      baseItems.push(
+      return [
+        ...baseItems,
         { href: '/admin/users', icon: Users, label: 'Users' },
         { href: '/admin/categories', icon: Package, label: 'Categories' },
         { href: '/admin/departments', icon: Building2, label: 'Departments' },
         { href: '/admin/setup', icon: Settings, label: 'Setup' },
         { href: '/reports', icon: BarChart3, label: 'Reports' }
-      );
+      ];
     }
 
     return baseItems;
@@ -120,22 +125,27 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     setSidebarOpen(false);
   }, [pathname]);
 
-  // Handle window resize
+  // Handle window resize with debounce
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
     const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setMobileMenuOpen(false);
-        setSidebarOpen(true);
-      } else {
-        setSidebarOpen(false);
-      }
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        if (window.innerWidth >= 1024) {
+          setMobileMenuOpen(false);
+          setSidebarOpen(true);
+        } else {
+          setSidebarOpen(false);
+        }
+      }, 100);
     };
     
-    // Set initial state
     handleResize();
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   if (!user) return null;
@@ -153,14 +163,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex-shrink-0',
+          'fixed inset-y-0 left-0 z-50 w-64 transform lg:translate-x-0 lg:static lg:inset-0 flex-shrink-0',
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         <div className="flex h-full flex-col bg-white border-r border-gray-200/60 shadow-xl">
           {/* Logo */}
           <div className="flex h-16 items-center justify-between px-4 border-b border-gray-100">
-            <Link href="/dashboard" className="flex items-center space-x-3">
+            <Link href="/dashboard" className="flex items-center space-x-3" prefetch={true}>
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
                 <Building2 className="h-4 w-4 text-white" />
               </div>
@@ -188,12 +198,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'flex items-center space-x-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 hover:scale-[1.02]',
+                    'flex items-center space-x-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-none',
                     isActive
                       ? 'bg-primary text-primary-foreground shadow-md'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   )}
                   prefetch={true}
+                  onClick={() => setMobileMenuOpen(false)}
                 >
                   <item.icon className="h-5 w-5 flex-shrink-0" />
                   <span className="truncate">{item.label}</span>
@@ -237,7 +248,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() => setMobileMenuOpen(true)}
-                className="h-9 w-9 lg:hidden transition-all duration-150 hover:scale-105"
+                className="h-9 w-9 lg:hidden"
               >
                 <Menu className="h-5 w-5" />
               </Button>
@@ -253,7 +264,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               {/* Notifications */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="relative h-9 w-9 rounded-full transition-all duration-150 hover:scale-105">
+                  <Button variant="ghost" size="sm" className="relative h-9 w-9 rounded-full">
                     <Bell className="h-4 w-4" />
                     <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-white text-[9px] rounded-full flex items-center justify-center font-semibold">
                       3
@@ -295,7 +306,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/notifications" className="w-full text-center text-sm text-primary font-medium">
+                    <Link href="/notifications" className="w-full text-center text-sm text-primary font-medium" prefetch={true}>
                       View all notifications
                     </Link>
                   </DropdownMenuItem>
@@ -305,7 +316,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full transition-all duration-150 hover:scale-105">
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                     <Avatar className="h-9 w-9">
                       <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-xs font-semibold">
                         {user.name.split(' ').map(n => n[0]).join('')}
@@ -325,13 +336,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/profile">
+                    <Link href="/profile" prefetch={true}>
                       <UserCheck className="mr-2 h-4 w-4" />
                       Profile
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/change-password">
+                    <Link href="/change-password" prefetch={true}>
                       <Settings className="mr-2 h-4 w-4" />
                       Change Password
                     </Link>
@@ -348,7 +359,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 transition-all duration-200 ease-in-out">
+        <main className="flex-1">
           {children}
         </main>
       </div>

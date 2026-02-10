@@ -17,6 +17,23 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -138,6 +155,7 @@ const departmentActivity = [
 
 export default function AdminUsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -172,7 +190,10 @@ export default function AdminUsersPage() {
               <h1 className="text-3xl font-bold text-foreground tracking-tight">User Management 👥</h1>
               <p className="text-muted-foreground mt-1">Manage system users and permissions</p>
             </div>
-            <Button className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg shadow-primary/25 gap-2">
+            <Button 
+              onClick={() => setShowAddDialog(true)}
+              className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg shadow-primary/25 gap-2"
+            >
               <UserPlus className="h-4 w-4" />
               Add User
             </Button>
@@ -285,7 +306,7 @@ export default function AdminUsersPage() {
                       cy="50%"
                       outerRadius={70}
                       dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
                     >
                       {roleDistribution.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
@@ -425,6 +446,71 @@ export default function AdminUsersPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Add User Dialog */}
+          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Add New User</DialogTitle>
+                <DialogDescription>
+                  Create a new user account with role and department assignment.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input id="name" placeholder="John Doe" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" placeholder="john@company.com" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="role">Role</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="employee">Employee</SelectItem>
+                      <SelectItem value="procurement">Procurement</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="department">Department</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="IT">IT</SelectItem>
+                      <SelectItem value="HR">HR</SelectItem>
+                      <SelectItem value="Finance">Finance</SelectItem>
+                      <SelectItem value="Operations">Operations</SelectItem>
+                      <SelectItem value="Procurement">Procurement</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="password">Temporary Password</Label>
+                  <Input id="password" type="password" placeholder="••••••••" />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={() => {
+                  toast.success('User created successfully!');
+                  setShowAddDialog(false);
+                }}>
+                  Create User
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </DashboardLayout>
     </ProtectedRoute>
