@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -21,6 +21,13 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @Post()
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  createUser(@Body() userData: any) {
+    return this.usersService.createUser(userData);
+  }
+
   @Get('stats')
   @UseGuards(RolesGuard)
   @Roles('admin')
@@ -41,6 +48,13 @@ export class UsersController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
+  }
+
+  @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  updateUser(@Param('id') id: string, @Body() updateData: any) {
+    return this.usersService.updateProfile(id, updateData);
   }
 
   @Patch(':id/role')
