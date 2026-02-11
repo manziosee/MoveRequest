@@ -7,10 +7,10 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://backend:3001/api
+      - NEXT_PUBLIC_API_URL=http://localhost/api
     depends_on:
       - backend
     networks:
@@ -22,12 +22,13 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "3001:3001"
+      - "5000:5000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=file:./moverequest.db
+      - PORT=5000
+      - DATABASE_PATH=/app/data/moverequest.db
       - JWT_SECRET=your-super-secret-jwt-key-change-in-production
-      - JWT_EXPIRES_IN=24h
+      - FRONTEND_URL=http://frontend:3000
     volumes:
       - backend-data:/app/data
     networks:

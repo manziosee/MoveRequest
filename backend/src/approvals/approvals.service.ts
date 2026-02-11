@@ -50,6 +50,30 @@ export class ApprovalsService {
     };
   }
 
+  async approveRequest(requestId: string, comment: string, user: User) {
+    await this.requestRepository.update(requestId, { status: 'approved', approvedById: user.id });
+    await this.historyRepository.save({
+      requestId,
+      action: 'approved',
+      performedBy: user.id,
+      performedByName: user.name,
+      comment,
+    });
+    return this.requestRepository.findOne({ where: { id: requestId }, relations: ['items', 'createdBy'] });
+  }
+
+  async rejectRequest(requestId: string, reason: string, user: User) {
+    await this.requestRepository.update(requestId, { status: 'rejected', rejectionReason: reason });
+    await this.historyRepository.save({
+      requestId,
+      action: 'rejected',
+      performedBy: user.id,
+      performedByName: user.name,
+      comment: reason,
+    });
+    return this.requestRepository.findOne({ where: { id: requestId }, relations: ['items', 'createdBy'] });
+  }
+
   async bulkApprove(requestIds: string[], user: User) {
     const results = [];
     for (const id of requestIds) {

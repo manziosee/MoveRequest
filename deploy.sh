@@ -53,8 +53,6 @@ if [ ! -f .env ]; then
 # Production Environment Variables
 NODE_ENV=production
 JWT_SECRET=$(openssl rand -base64 32)
-JWT_EXPIRES_IN=24h
-DATABASE_URL=file:./data/moverequest.db
 NEXT_PUBLIC_API_URL=http://localhost/api
 EOF
     print_success "Environment file created"
@@ -84,7 +82,7 @@ fi
 
 # Run database migrations and seed data
 print_status "Setting up database..."
-docker-compose exec backend npm run seed
+docker-compose exec -T backend npm run seed || print_warning "Database seed skipped (may already exist)"
 
 print_success "🎉 Deployment completed successfully!"
 echo ""

@@ -47,7 +47,9 @@ export class NotificationsService {
   ];
 
   async getUserNotifications(userId: string): Promise<Notification[]> {
-    return this.notifications.filter(n => n.userId === userId);
+    return this.notifications.filter(n => n.userId === userId).sort((a, b) => 
+      b.createdAt.getTime() - a.createdAt.getTime()
+    );
   }
 
   async getUnreadCount(userId: string): Promise<number> {

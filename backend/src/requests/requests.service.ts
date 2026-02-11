@@ -36,7 +36,7 @@ export class RequestsService {
     return this.findOne(savedRequest.id);
   }
 
-  async findAll(user: User) {
+  async findAll(user: User, filters?: { status?: string; priority?: string; department?: string }) {
     const query = this.requestRepository.createQueryBuilder('request')
       .leftJoinAndSelect('request.items', 'items')
       .leftJoinAndSelect('request.createdBy', 'createdBy')
@@ -46,7 +46,43 @@ export class RequestsService {
       query.where('request.createdById = :userId', { userId: user.id });
     }
 
+    if (filters?.status) {
+      query.andWhere('request.status = :status', { status: filters.status });
+    }
+    if (filters?.priority) {
+      query.andWhere('request.priority = :priority', { priority: filters.priority });
+    }
+    if (filters?.department) {
+      query.andWhere('request.department = :department', { department: filters.department });
+    }
+
+    query.orderBy('request.createdAt', 'DESC');
     return query.getMany();
+  }
+
+  async getStats(user: User) {
+    const query = this.requestRepository.createQueryBuilder('request');
+    
+    if (user.role === 'employee') {
+      query.where('request.createdById = :userId', { userId: user.id });
+    }
+
+    const total = await query.getCount();
+    const pending = await query.clone().andWhere('request.status = :status', { status: 'pending' }).getCount();
+    const approved = await query.clone().andWhere('request.status = :status', { status: 'approved' }).getCount();
+    const rejected = await query.clone().andWhere('request.status = :status', { status: 'rejected' }).getCount();
+    const draft = await query.clone().andWhere('request.status = :status', { status: 'draft' }).getCount();
+
+    const successRate = total > 0 ? Math.round((approved / total) * 100) : 0;
+
+    return {
+      total,
+      pending,
+      approved,
+      rejected,
+      draft,
+      successRate,
+    };
   }
 
   async findOne(id: string) {
