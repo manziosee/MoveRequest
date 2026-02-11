@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Put, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -20,9 +20,20 @@ export class RequestsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all requests' })
-  findAll(@CurrentUser() user: User) {
-    return this.requestsService.findAll(user);
+  @ApiOperation({ summary: 'Get all requests with filters' })
+  findAll(
+    @CurrentUser() user: User,
+    @Query('status') status?: string,
+    @Query('priority') priority?: string,
+    @Query('department') department?: string,
+  ) {
+    return this.requestsService.findAll(user, { status, priority, department });
+  }
+
+  @Get('stats')
+  @ApiOperation({ summary: 'Get request statistics' })
+  getStats(@CurrentUser() user: User) {
+    return this.requestsService.getStats(user);
   }
 
   @Get(':id')

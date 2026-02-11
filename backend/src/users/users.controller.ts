@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Patch, Param, Body, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -17,6 +17,8 @@ export class UsersController {
   @Get()
   @UseGuards(RolesGuard)
   @Roles('admin')
+  @ApiOperation({ summary: 'Get all users (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Returns list of all users' })
   findAll() {
     return this.usersService.findAll();
   }
@@ -24,6 +26,8 @@ export class UsersController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles('admin')
+  @ApiOperation({ summary: 'Create new user (Admin only)' })
+  @ApiResponse({ status: 201, description: 'User created successfully' })
   createUser(@Body() userData: any) {
     return this.usersService.createUser(userData);
   }
@@ -31,21 +35,36 @@ export class UsersController {
   @Get('stats')
   @UseGuards(RolesGuard)
   @Roles('admin')
+  @ApiOperation({ summary: 'Get user statistics (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Returns user statistics' })
   getStats() {
     return this.usersService.getStats();
   }
 
   @Get('profile')
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: 200, description: 'Returns current user profile' })
   getProfile(@CurrentUser() user: User) {
     return this.usersService.findOne(user.id);
   }
 
+  @Get('activity')
+  @ApiOperation({ summary: 'Get user activity history' })
+  @ApiResponse({ status: 200, description: 'Returns user activity log' })
+  getActivity(@CurrentUser() user: User) {
+    return this.usersService.getActivityHistory(user.id);
+  }
+
   @Patch('profile')
+  @ApiOperation({ summary: 'Update current user profile' })
+  @ApiResponse({ status: 200, description: 'Profile updated successfully' })
   updateProfile(@CurrentUser() user: User, @Body() updateData: any) {
     return this.usersService.updateProfile(user.id, updateData);
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get user by ID' })
+  @ApiResponse({ status: 200, description: 'Returns user details' })
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
@@ -53,6 +72,8 @@ export class UsersController {
   @Patch(':id')
   @UseGuards(RolesGuard)
   @Roles('admin')
+  @ApiOperation({ summary: 'Update user by ID (Admin only)' })
+  @ApiResponse({ status: 200, description: 'User updated successfully' })
   updateUser(@Param('id') id: string, @Body() updateData: any) {
     return this.usersService.updateProfile(id, updateData);
   }
@@ -60,6 +81,8 @@ export class UsersController {
   @Patch(':id/role')
   @UseGuards(RolesGuard)
   @Roles('admin')
+  @ApiOperation({ summary: 'Update user role (Admin only)' })
+  @ApiResponse({ status: 200, description: 'User role updated successfully' })
   updateRole(@Param('id') id: string, @Body('role') role: string) {
     return this.usersService.updateRole(id, role);
   }
@@ -67,11 +90,15 @@ export class UsersController {
   @Patch(':id/toggle-active')
   @UseGuards(RolesGuard)
   @Roles('admin')
+  @ApiOperation({ summary: 'Toggle user active status (Admin only)' })
+  @ApiResponse({ status: 200, description: 'User status toggled successfully' })
   toggleActive(@Param('id') id: string) {
     return this.usersService.toggleActive(id);
   }
 
   @Patch('change-password')
+  @ApiOperation({ summary: 'Change own password' })
+  @ApiResponse({ status: 200, description: 'Password changed successfully' })
   changePassword(@CurrentUser() user: User, @Body() passwordData: any) {
     return this.usersService.changePassword(user.id, passwordData.newPassword);
   }
@@ -79,6 +106,8 @@ export class UsersController {
   @Patch(':id/password')
   @UseGuards(RolesGuard)
   @Roles('admin')
+  @ApiOperation({ summary: 'Admin change user password (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Password changed successfully' })
   adminChangePassword(@Param('id') id: string, @Body('password') password: string) {
     return this.usersService.changePassword(id, password);
   }
