@@ -45,28 +45,28 @@ export class UsersController {
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'Returns current user profile' })
   getProfile(@CurrentUser() user: User) {
-    return this.usersService.findOne(user.id);
+    return this.usersService.findOne(Number(user.id));
   }
 
   @Get('activity')
   @ApiOperation({ summary: 'Get user activity history' })
   @ApiResponse({ status: 200, description: 'Returns user activity log' })
   getActivity(@CurrentUser() user: User) {
-    return this.usersService.getActivityHistory(user.id);
+    return this.usersService.getActivityHistory(Number(user.id));
   }
 
   @Patch('profile')
   @ApiOperation({ summary: 'Update current user profile' })
   @ApiResponse({ status: 200, description: 'Profile updated successfully' })
   updateProfile(@CurrentUser() user: User, @Body() updateData: any) {
-    return this.usersService.updateProfile(user.id, updateData);
+    return this.usersService.updateProfile(Number(user.id), updateData);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get user by ID' })
   @ApiResponse({ status: 200, description: 'Returns user details' })
   findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id);
+    return this.usersService.findOne(Number(id));
   }
 
   @Patch(':id')
@@ -75,7 +75,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Update user by ID (Admin only)' })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
   updateUser(@Param('id') id: string, @Body() updateData: any) {
-    return this.usersService.updateProfile(id, updateData);
+    return this.usersService.updateProfile(Number(id), updateData);
   }
 
   @Patch(':id/role')
@@ -84,7 +84,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Update user role (Admin only)' })
   @ApiResponse({ status: 200, description: 'User role updated successfully' })
   updateRole(@Param('id') id: string, @Body('role') role: string) {
-    return this.usersService.updateRole(id, role);
+    return this.usersService.updateRole(Number(id), role);
   }
 
   @Patch(':id/toggle-active')
@@ -93,14 +93,14 @@ export class UsersController {
   @ApiOperation({ summary: 'Toggle user active status (Admin only)' })
   @ApiResponse({ status: 200, description: 'User status toggled successfully' })
   toggleActive(@Param('id') id: string) {
-    return this.usersService.toggleActive(id);
+    return this.usersService.toggleActive(Number(id));
   }
 
   @Patch('change-password')
   @ApiOperation({ summary: 'Change own password' })
   @ApiResponse({ status: 200, description: 'Password changed successfully' })
   changePassword(@CurrentUser() user: User, @Body() passwordData: any) {
-    return this.usersService.changePassword(user.id, passwordData.newPassword);
+    return this.usersService.changePassword(Number(user.id), passwordData.newPassword);
   }
 
   @Patch(':id/password')
@@ -109,6 +109,6 @@ export class UsersController {
   @ApiOperation({ summary: 'Admin change user password (Admin only)' })
   @ApiResponse({ status: 200, description: 'Password changed successfully' })
   adminChangePassword(@Param('id') id: string, @Body('password') password: string) {
-    return this.usersService.changePassword(id, password);
+    return this.usersService.changePassword(Number(id), password);
   }
 }

@@ -1,95 +1,88 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User, UserRole } from './entities/user.entity';
+import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async findAll() {
-    return this.userRepository.find({
-      select: ['id', 'email', 'name', 'role', 'department', 'isActive', 'createdAt'],
+    return this.prisma.user.findMany({
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, department: true, isActive: true, createdAt: true },
     });
   }
 
   async createUser(userData: any) {
-    const existingUser = await this.userRepository.findOne({ where: { email: userData.email } });
+    const existingUser = await this.prisma.user.findUnique({ where: { email: userData.email } });
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
 
     const hashedPassword = await bcrypt.hash(userData.password || 'password', 10);
-    const newUser = {
-      email: userData.email,
-      name: userData.name,
-      password: hashedPassword,
-      role: userData.role || 'employee',
-      department: userData.department,
-      isActive: true,
-    };
-    
-    const savedUser = await this.userRepository.save(newUser);
-    return this.userRepository.findOne({ 
-      where: { id: savedUser.id },
-      select: ['id', 'email', 'name', 'role', 'department', 'isActive', 'createdAt'],
+    return this.prisma.user.create({
+      data: {
+        email: userData.email,
+        firstName: userData.firstName || userData.name?.split(' ')[0] || 'User',
+        lastName: userData.lastName || userData.name?.split(' ')[1] || '',
+        password: hashedPassword,
+        role: userData.role || 'employee',
+        department: userData.department,
+        isActive: true,
+      },
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, department: true, isActive: true, createdAt: true },
     });
   }
 
-  async findOne(id: string) {
-    const user = await this.userRepository.findOne({ 
+  async findOne(id: number) {
+    const user = await this.prisma.user.findUnique({ 
       where: { id },
-      select: ['id', 'email', 'name', 'role', 'department', 'isActive', 'createdAt'],
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, department: true, isActive: true, createdAt: true },
     });
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
 
-  async updateProfile(id: string, updateData: Partial<User>) {
-    await this.userRepository.update(id, updateData);
+  async updateProfile(id: number, updateData: any) {
+    await this.prisma.user.update({ where: { id }, data: updateData });
     return this.findOne(id);
   }
 
-  async updateRole(id: string, role: string) {
-    await this.userRepository.update(id, { role });
+  async updateRole(id: number, role: string) {
+    await this.prisma.user.update({ where: { id }, data: { role } });
     return this.findOne(id);
   }
 
-  async toggleActive(id: string) {
+  async toggleActive(id: number) {
     const user = await this.findOne(id);
-    await this.userRepository.update(id, { isActive: !user.isActive });
+    await this.prisma.user.update({ where: { id }, data: { isActive: !user.isActive } });
     return this.findOne(id);
   }
 
-  async changePassword(id: string, newPassword: string) {
+  async changePassword(id: number, newPassword: string) {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await this.userRepository.update(id, { password: hashedPassword });
+    await this.prisma.user.update({ where: { id }, data: { password: hashedPassword } });
     return { message: 'Password updated successfully' };
   }
 
   async getStats() {
-    const total = await this.userRepository.count();
-    const active = await this.userRepository.count({ where: { isActive: true } });
-    const byRole = await this.userRepository
-      .createQueryBuilder('user')
-      .select('user.role', 'role')
-      .addSelect('COUNT(*)', 'count')
-      .groupBy('user.role')
-      .getRawMany();
-
+    const total = await this.prisma.user.count();
+    const active = await this.prisma.user.count({ where: { isActive: true } });
+    const byRole = await this.prisma.user.groupBy({
+      by: ['role'],
+      _count: true,
+    });
     return { total, active, byRole };
   }
 
-  async getActivityHistory(userId: string) {
-    // Mock activity data - in real app would come from audit logs
+  async getActivityHistory(userId: number) {
     return [
       { action: 'Logged in', time: new Date(Date.now() - 2 * 60 * 60 * 1000), type: 'login' },
       { action: 'Profile viewed', time: new Date(Date.now() - 24 * 60 * 60 * 1000), type: 'view' },
       { action: 'Password changed', time: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), type: 'security' },
     ];
+  }
+
+  async findByEmail(email: string) {
+    return this.prisma.user.findUnique({ where: { email } });
   }
 }

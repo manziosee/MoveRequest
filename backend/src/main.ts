@@ -18,19 +18,46 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('MoveRequest API')
-    .setDescription('Movement & Procurement Management System API - Complete REST API for managing movement requests, approvals, users, and reports')
+    .setDescription(`
+# Movement & Procurement Management System API
+
+Complete REST API for managing movement requests, approvals, users, and reports.
+
+## Features
+- 🔐 JWT Authentication with role-based access control
+- 📋 Full CRUD operations for movement requests
+- ✅ Multi-level approval workflow
+- 📊 Real-time dashboards and analytics
+- 📈 Comprehensive reporting and exports
+- 👥 User and department management
+- 🔔 Real-time notifications
+- 📎 File upload and management
+
+## Authentication
+Most endpoints require authentication. Use the /auth/login endpoint to obtain a JWT token, then click the "Authorize" button above and enter: Bearer <your-token>
+
+## Roles
+- **employee**: Can create and view own requests
+- **procurement**: Can approve/reject requests and view all requests
+- **admin**: Full system access including user and system management
+
+## Demo Accounts
+- Admin: admin@company.com / password
+- Procurement: procurement@company.com / password
+- Employee: employee@company.com / password
+    `)
     .setVersion('1.0')
     .addBearerAuth()
-    .addTag('health', 'Health check endpoints')
-    .addTag('auth', 'Authentication endpoints')
-    .addTag('users', 'User management endpoints')
-    .addTag('requests', 'Movement request endpoints')
-    .addTag('approvals', 'Approval workflow endpoints')
-    .addTag('reports', 'Reports and analytics endpoints')
-    .addTag('admin', 'Admin management endpoints')
-    .addTag('dashboard', 'Dashboard statistics endpoints')
-    .addTag('notifications', 'Notification endpoints')
-    .addTag('files', 'File upload endpoints')
+    .addTag('health', 'Health check and system status endpoints')
+    .addTag('auth', 'Authentication and authorization endpoints')
+    .addTag('users', 'User management and profile endpoints')
+    .addTag('requests', 'Movement request CRUD and management endpoints')
+    .addTag('approvals', 'Approval workflow and history endpoints')
+    .addTag('reports', 'Reports, analytics, and export endpoints')
+    .addTag('admin', 'Admin panel and system management endpoints')
+    .addTag('dashboard', 'Dashboard statistics and metrics endpoints')
+    .addTag('notifications', 'Notification management endpoints')
+    .addTag('files', 'File upload and management endpoints')
     .build();
   
   const document = SwaggerModule.createDocument(app, config);

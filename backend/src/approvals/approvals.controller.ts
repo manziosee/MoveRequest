@@ -37,7 +37,7 @@ export class ApprovalsController {
     @Body('comment') comment: string,
     @CurrentUser() user: User,
   ) {
-    return this.approvalsService.approveRequest(requestId, comment, user);
+    return this.approvalsService.approveRequest(Number(requestId), comment, Number(user.id));
   }
 
   @Post(':requestId/reject')
@@ -48,13 +48,13 @@ export class ApprovalsController {
     @Body('reason') reason: string,
     @CurrentUser() user: User,
   ) {
-    return this.approvalsService.rejectRequest(requestId, reason, user);
+    return this.approvalsService.rejectRequest(Number(requestId), reason, Number(user.id));
   }
 
   @Post('bulk-approve')
   @ApiOperation({ summary: 'Bulk approve multiple requests' })
   @ApiResponse({ status: 200, description: 'Requests approved successfully' })
   bulkApprove(@Body('requestIds') requestIds: string[], @CurrentUser() user: User) {
-    return this.approvalsService.bulkApprove(requestIds, user);
+    return this.approvalsService.bulkApprove(requestIds.map(Number), Number(user.id));
   }
 }

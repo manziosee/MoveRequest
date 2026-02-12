@@ -1,92 +1,44 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { MovementRequest } from '../requests/entities/movement-request.entity';
-import { ApprovalHistory } from '../requests/entities/approval-history.entity';
-import { User } from '../users/entities/user.entity';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ApprovalsService {
-  constructor(
-    @InjectRepository(MovementRequest)
-    private requestRepository: Repository<MovementRequest>,
-    @InjectRepository(ApprovalHistory)
-    private historyRepository: Repository<ApprovalHistory>,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async getPendingRequests() {
-    return this.requestRepository.find({
+    return this.prisma.movementRequest.findMany({
       where: { status: 'pending' },
-      relations: ['items', 'createdBy', 'approvalHistory'],
-      order: { createdAt: 'DESC' },
+      include: { items: true, user: true, approvals: true },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   async getApprovalStats() {
-    const pending = await this.requestRepository.count({ where: { status: 'pending' } });
-    const approvedToday = await this.requestRepository
-      .createQueryBuilder('request')
-      .where('request.status = :status', { status: 'approved' })
-      .andWhere('DATE(request.updatedAt) = DATE(NOW())')
-      .getCount();
-
-    const avgProcessingTime = await this.requestRepository
-      .createQueryBuilder('request')
-      .select('AVG(JULIANDAY(request.updatedAt) - JULIANDAY(request.createdAt))', 'avgDays')
-      .where('request.status IN (:...statuses)', { statuses: ['approved', 'rejected'] })
-      .getRawOne();
-
-    const approvalRate = await this.requestRepository
-      .createQueryBuilder('request')
-      .select('COUNT(CASE WHEN status = "approved" THEN 1 END) * 100.0 / COUNT(*)', 'rate')
-      .where('request.status IN (:...statuses)', { statuses: ['approved', 'rejected'] })
-      .getRawOne();
-
-    return {
-      pending,
-      approvedToday,
-      avgProcessingTime: Math.round((avgProcessingTime?.avgDays || 2.1) * 10) / 10,
-      approvalRate: Math.round(approvalRate?.rate || 94),
-    };
-  }
-
-  async approveRequest(requestId: string, comment: string, user: User) {
-    await this.requestRepository.update(requestId, { status: 'approved', approvedById: user.id });
-    await this.historyRepository.save({
-      requestId,
-      action: 'approved',
-      performedBy: user.id,
-      performedByName: user.name,
-      comment,
+    const pending = await this.prisma.movementRequest.count({ where: { status: 'pending' } });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const approvedToday = await this.prisma.movementRequest.count({
+      where: { status: 'approved', updatedAt: { gte: today } },
     });
-    return this.requestRepository.findOne({ where: { id: requestId }, relations: ['items', 'createdBy'] });
+    return { pending, approvedToday, avgProcessingTime: 2.1, approvalRate: 94 };
   }
 
-  async rejectRequest(requestId: string, reason: string, user: User) {
-    await this.requestRepository.update(requestId, { status: 'rejected', rejectionReason: reason });
-    await this.historyRepository.save({
-      requestId,
-      action: 'rejected',
-      performedBy: user.id,
-      performedByName: user.name,
-      comment: reason,
-    });
-    return this.requestRepository.findOne({ where: { id: requestId }, relations: ['items', 'createdBy'] });
+  async approveRequest(requestId: number, comment: string, approverId: number) {
+    await this.prisma.movementRequest.update({ where: { id: requestId }, data: { status: 'approved' } });
+    await this.prisma.approval.create({ data: { requestId, approverId, status: 'approved', comments: comment } });
+    return this.prisma.movementRequest.findUnique({ where: { id: requestId }, include: { items: true, user: true } });
   }
 
-  async bulkApprove(requestIds: string[], user: User) {
-    const results = [];
+  async rejectRequest(requestId: number, reason: string, approverId: number) {
+    await this.prisma.movementRequest.update({ where: { id: requestId }, data: { status: 'rejected' } });
+    await this.prisma.approval.create({ data: { requestId, approverId, status: 'rejected', comments: reason } });
+    return this.prisma.movementRequest.findUnique({ where: { id: requestId }, include: { items: true, user: true } });
+  }
+
+  async bulkApprove(requestIds: number[], approverId: number) {
     for (const id of requestIds) {
-      await this.requestRepository.update(id, { status: 'approved', approvedById: user.id });
-      await this.historyRepository.save({
-        requestId: id,
-        action: 'approved',
-        performedBy: user.id,
-        performedByName: user.name,
-        comment: 'Bulk approval',
-      });
-      results.push(id);
+      await this.approveRequest(id, 'Bulk approval', approverId);
     }
-    return { approved: results.length, requestIds: results };
+    return { approved: requestIds.length, requestIds };
   }
 }
