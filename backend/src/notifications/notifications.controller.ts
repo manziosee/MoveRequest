@@ -16,14 +16,14 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Get user notifications' })
   @ApiResponse({ status: 200, description: 'Returns list of notifications sorted by date' })
   getUserNotifications(@CurrentUser() user: User) {
-    return this.notificationsService.getUserNotifications(user.id);
+    return this.notificationsService.getUserNotifications(Number(user.id));
   }
 
   @Get('unread-count')
   @ApiOperation({ summary: 'Get unread notification count' })
   @ApiResponse({ status: 200, description: 'Returns count of unread notifications' })
   async getUnreadCount(@CurrentUser() user: User) {
-    const count = await this.notificationsService.getUnreadCount(user.id);
+    const count = await this.notificationsService.getUnreadCount(Number(user.id));
     return { count };
   }
 
@@ -31,13 +31,13 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Mark notification as read' })
   @ApiResponse({ status: 200, description: 'Notification marked as read' })
   markAsRead(@Param('id') id: string, @CurrentUser() user: User) {
-    return this.notificationsService.markAsRead(id, user.id);
+    return this.notificationsService.markAsRead(Number(id), Number(user.id));
   }
 
   @Patch('mark-all-read')
   @ApiOperation({ summary: 'Mark all notifications as read' })
   @ApiResponse({ status: 200, description: 'All notifications marked as read' })
   markAllAsRead(@CurrentUser() user: User) {
-    return this.notificationsService.markAllAsRead(user.id);
+    return this.notificationsService.markAllAsRead(Number(user.id));
   }
 }

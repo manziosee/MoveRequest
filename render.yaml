@@ -1,0 +1,27 @@
+services:
+  # Backend API Service
+  - type: web
+    name: moverequest-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd backend && npm install && npx prisma generate && npm run build
+    startCommand: cd backend && npx prisma migrate deploy && node dist/src/main
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        value: postgres://af21f2a809ce06d0e8a8a7052feb9a421c37b17d8df17ba10a468d09349c8294:sk_v3yNPLTnm7BOK3JFCbok7@db.prisma.io:5432/postgres?sslmode=require
+      - key: JWT_SECRET
+        value: dc988e245b5f48c735bf60314059a439
+      - key: FRONTEND_URL
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: SENDGRID_FROM_EMAIL
+        value: manziosee3@gmail.com
+      - key: SENDGRID_FROM_NAME
+        value: MoveRequest System
+    healthCheckPath: /health

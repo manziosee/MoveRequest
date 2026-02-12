@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { RequestsModule } from './requests/requests.module';
@@ -10,6 +9,7 @@ import { AdminModule } from './admin/admin.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { FilesModule } from './common/files.module';
+import { PrismaModule } from './prisma/prisma.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -17,12 +17,7 @@ import { AppController } from './app.controller';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    TypeOrmModule.forRoot({
-      type: 'sqlite',
-      database: 'moverequest.db',
-      autoLoadEntities: true,
-      synchronize: true,
-    }),
+    PrismaModule,
     AuthModule,
     UsersModule,
     RequestsModule,
