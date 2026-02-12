@@ -57,3 +57,4 @@ uploads/
 
 # Docker
 .dockerignore
+/generated/prisma

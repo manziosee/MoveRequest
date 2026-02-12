@@ -52,7 +52,7 @@ if [ ! -f .env ]; then
     cat > .env << EOF
 # Production Environment Variables
 NODE_ENV=production
-JWT_SECRET=$(openssl rand -base64 32)
+JWT_SECRET=dc988e245b5f48c735bf60314059a439
 NEXT_PUBLIC_API_URL=http://localhost/api
 EOF
     print_success "Environment file created"

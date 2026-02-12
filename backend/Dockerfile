@@ -3,12 +3,17 @@ FROM node:18-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat python3 make g++
+RUN apk add --no-cache libc6-compat python3 make g++ openssl
 WORKDIR /app
 
 # Install dependencies
 COPY package.json package-lock.json* ./
 RUN npm ci
+
+# Generate Prisma Client
+COPY prisma ./prisma/
+COPY prisma.config.ts ./
+RUN npx prisma generate
 
 # Build the source code
 FROM base AS builder
@@ -32,10 +37,8 @@ RUN adduser --system --uid 1001 nestjs
 COPY --from=builder --chown=nestjs:nestjs /app/dist ./dist
 COPY --from=builder --chown=nestjs:nestjs /app/node_modules ./node_modules
 COPY --from=builder --chown=nestjs:nestjs /app/package.json ./package.json
-
-# Create data directory for SQLite
-RUN mkdir -p /app/data
-RUN chown nestjs:nestjs /app/data
+COPY --from=builder --chown=nestjs:nestjs /app/prisma ./prisma
+COPY --from=builder --chown=nestjs:nestjs /app/prisma.config.ts ./prisma.config.ts
 
 USER nestjs
 
