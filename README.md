@@ -69,7 +69,7 @@ cd MoveRequest
 
 - 🚀 **NestJS 10** - Enterprise Node.js framework
 - 📘 **TypeScript** - End-to-end type safety
-- 🗄️ **SQLite + TypeORM** - Lightweight database
+- 🗄️ **PostgreSQL + Prisma** - Production-ready database
 - 🔐 **JWT + bcrypt** - Secure authentication
 - 📖 **Swagger/OpenAPI** - Auto-generated docs
 - ✅ **Class Validator** - Request validation
@@ -285,9 +285,12 @@ NEXT_PUBLIC_API_URL=http://localhost/api
 **Backend `.env`:**
 ```env
 PORT=5000
-DATABASE_PATH=moverequest.db
+DATABASE_URL=postgresql://user:password@localhost:5432/moverequest
 JWT_SECRET=your-super-secret-jwt-key
 FRONTEND_URL=http://localhost:3000
+SENDGRID_API_KEY=your-sendgrid-api-key
+SENDGRID_FROM_EMAIL=noreply@company.com
+SENDGRID_FROM_NAME=MoveRequest System
 ```
 
 **Frontend `.env.local`:**

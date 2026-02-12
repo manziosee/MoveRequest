@@ -1,23 +1,22 @@
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
-import { User } from '../users/entities/user.entity';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/forgot-password.dto';
+import { UsersService } from '../users/users.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private prisma: PrismaService,
+    private usersService: UsersService,
     private jwtService: JwtService,
   ) {}
 
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
-    const user = await this.userRepository.findOne({ where: { email } });
+    const user = await this.prisma.user.findUnique({ where: { email } });
 
     if (!user || !await bcrypt.compare(password, user.password)) {
       throw new UnauthorizedException('Invalid credentials');
@@ -29,7 +28,8 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
         role: user.role,
         department: user.department,
       },
@@ -39,30 +39,35 @@ export class AuthService {
   async register(registerDto: RegisterDto) {
     const { email, password, name, department } = registerDto;
     
-    const existingUser = await this.userRepository.findOne({ where: { email } });
+    const existingUser = await this.prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       throw new UnauthorizedException('User already exists');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = this.userRepository.create({
-      email,
-      password: hashedPassword,
-      name,
-      department,
+    const [firstName, ...lastNameParts] = (name || 'User').split(' ');
+    const lastName = lastNameParts.join(' ') || '';
+
+    await this.prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        department,
+      },
     });
 
-    await this.userRepository.save(user);
     return this.login({ email, password });
   }
 
-  async validateUser(userId: string) {
-    return this.userRepository.findOne({ where: { id: userId } });
+  async validateUser(userId: number) {
+    return this.prisma.user.findUnique({ where: { id: userId } });
   }
 
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
     const { email } = forgotPasswordDto;
-    const user = await this.userRepository.findOne({ where: { email } });
+    const user = await this.prisma.user.findUnique({ where: { email } });
 
     if (!user) {
       return { message: 'If email exists, reset link has been sent' };
@@ -89,13 +94,13 @@ export class AuthService {
         throw new BadRequestException('Invalid token');
       }
 
-      const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+      const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
       if (!user) {
         throw new BadRequestException('User not found');
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
-      await this.userRepository.update(user.id, { password: hashedPassword });
+      await this.prisma.user.update({ where: { id: user.id }, data: { password: hashedPassword } });
 
       return { message: 'Password reset successfully' };
     } catch (error) {
@@ -103,15 +108,15 @@ export class AuthService {
     }
   }
 
-  async changePassword(userId: string, oldPassword: string, newPassword: string) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+  async changePassword(userId: number, oldPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
     
     if (!user || !(await bcrypt.compare(oldPassword, user.password))) {
       throw new BadRequestException('Current password is incorrect');
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await this.userRepository.update(userId, { password: hashedPassword });
+    await this.prisma.user.update({ where: { id: userId }, data: { password: hashedPassword } });
 
     return { message: 'Password changed successfully' };
   }
