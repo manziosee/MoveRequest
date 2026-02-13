@@ -348,8 +348,24 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  bulkApproveRequests: (token: string, requestIds: string[]) =>
-    fetch(`${API_URL}/admin/bulk-approve`, {
+  getUserActivity: (token: string) =>
+    fetch(`${API_URL}/admin/user-activity`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  getBackupInfo: (token: string) =>
+    fetch(`${API_URL}/admin/backup-info`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  performBackup: (token: string) =>
+    fetch(`${API_URL}/admin/backup`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  bulkApproveRequestsAdmin: (token: string, requestIds: number[]) =>
+    fetch(`${API_URL}/admin/bulk-approve-requests`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -358,15 +374,12 @@ export const api = {
       body: JSON.stringify({ requestIds }),
     }),
 
-  bulkDeleteUsers: (token: string, userIds: string[]) =>
-    fetch(`${API_URL}/admin/bulk-delete-users`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ userIds }),
+  exportUsers: (token: string) =>
+    fetch(`${API_URL}/admin/export-users`, {
+      headers: { Authorization: `Bearer ${token}` },
     }),
+
+
 
   // Dashboard
   getDashboardStats: (token: string) =>

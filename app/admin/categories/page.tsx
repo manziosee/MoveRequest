@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,33 +24,51 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, Pencil, Trash2, FolderTree } from 'lucide-react';
+import { Plus, Pencil, Trash2, FolderTree, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { api } from '@/lib/api';
+import { formatDistanceToNow } from 'date-fns';
 
 interface Category {
-  id: string;
+  id: number;
   name: string;
-  description: string;
-  itemCount: number;
+  description: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
-const initialCategories: Category[] = [
-  { id: '1', name: 'Electronics', description: 'Electronic devices and equipment', itemCount: 45, createdAt: '2024-01-15' },
-  { id: '2', name: 'Furniture', description: 'Office furniture and fixtures', itemCount: 32, createdAt: '2024-01-15' },
-  { id: '3', name: 'Stationery', description: 'Office supplies and stationery', itemCount: 78, createdAt: '2024-01-15' },
-  { id: '4', name: 'Equipment', description: 'Tools and equipment', itemCount: 23, createdAt: '2024-01-15' },
-  { id: '5', name: 'Supplies', description: 'General supplies', itemCount: 56, createdAt: '2024-01-15' },
-];
-
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({ name: '', description: '' });
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      setLoading(true);
+      const response = await api.getCategories(token);
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      toast.error('Failed to load categories');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAdd = () => {
     setEditingCategory(null);
@@ -60,51 +78,82 @@ export default function CategoriesPage() {
 
   const handleEdit = (category: Category) => {
     setEditingCategory(category);
-    setFormData({ name: category.name, description: category.description });
+    setFormData({ name: category.name, description: category.description || '' });
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name.trim()) {
       toast.error('Category name is required');
       return;
     }
 
-    if (editingCategory) {
-      setCategories(categories.map(c =>
-        c.id === editingCategory.id
-          ? { ...c, name: formData.name, description: formData.description }
-          : c
-      ));
-      toast.success('Category updated successfully');
-    } else {
-      const newCategory: Category = {
-        id: Date.now().toString(),
-        name: formData.name,
-        description: formData.description,
-        itemCount: 0,
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-      setCategories([...categories, newCategory]);
-      toast.success('Category added successfully');
-    }
+    const token = localStorage.getItem('token');
+    if (!token) return;
 
-    setDialogOpen(false);
+    try {
+      if (editingCategory) {
+        const response = await api.updateCategory(token, editingCategory.id.toString(), formData);
+        if (response.ok) {
+          toast.success('Category updated successfully');
+          fetchCategories();
+        } else {
+          toast.error('Failed to update category');
+        }
+      } else {
+        const response = await api.createCategory(token, formData);
+        if (response.ok) {
+          toast.success('Category added successfully');
+          fetchCategories();
+        } else {
+          toast.error('Failed to create category');
+        }
+      }
+      setDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving category:', error);
+      toast.error('Failed to save category');
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: number) => {
     setDeletingId(id);
     setDeleteConfirmOpen(true);
   };
 
-  const confirmDelete = () => {
-    if (deletingId) {
-      setCategories(categories.filter(c => c.id !== deletingId));
-      toast.success('Category deleted successfully');
+  const confirmDelete = async () => {
+    if (!deletingId) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await api.deleteCategory(token, deletingId.toString());
+      if (response.ok) {
+        toast.success('Category deleted successfully');
+        fetchCategories();
+      } else {
+        toast.error('Failed to delete category');
+      }
       setDeleteConfirmOpen(false);
       setDeletingId(null);
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast.error('Failed to delete category');
     }
   };
+
+  if (loading) {
+    return (
+      <ProtectedRoute allowedRoles={['admin']}>
+        <DashboardLayout>
+          <div className="flex items-center justify-center h-96">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </DashboardLayout>
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute allowedRoles={['admin']}>
@@ -133,55 +182,67 @@ export default function CategoriesPage() {
               <CardDescription>Manage and organize item categories</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border border-gray-200/60 overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/30">
-                      <TableHead>Category Name</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Items</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {categories.map((category) => (
-                      <TableRow key={category.id}>
-                        <TableCell className="font-medium">{category.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{category.description}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                            {category.itemCount} items
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{category.createdAt}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(category)}
-                              className="h-8 gap-2"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                              Edit
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(category.id)}
-                              className="h-8 gap-2 text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              Delete
-                            </Button>
-                          </div>
-                        </TableCell>
+              {categories.length === 0 ? (
+                <div className="text-center py-12">
+                  <FolderTree className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+                  <p className="text-lg font-medium text-muted-foreground mb-2">No categories yet</p>
+                  <p className="text-sm text-muted-foreground/70 mb-4">
+                    Create your first category to get started
+                  </p>
+                  <Button onClick={handleAdd} variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Category
+                  </Button>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-gray-200/60 overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/30">
+                        <TableHead>Category Name</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {categories.map((category) => (
+                        <TableRow key={category.id}>
+                          <TableCell className="font-medium">{category.name}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {category.description || 'No description'}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {formatDistanceToNow(new Date(category.createdAt), { addSuffix: true })}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(category)}
+                                className="h-8 gap-2"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(category.id)}
+                                className="h-8 gap-2 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                Delete
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </CardContent>
           </Card>
 

@@ -1,12 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class RequestsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async create(data: any, userId: number) {
-    return this.prisma.movementRequest.create({
+    const request = await this.prisma.movementRequest.create({
       data: {
         ...data,
         userId,
@@ -14,6 +18,22 @@ export class RequestsService {
       },
       include: { items: true, user: true },
     });
+
+    // Notify all procurement users
+    const procurementUsers = await this.prisma.user.findMany({
+      where: { role: 'procurement', isActive: true },
+    });
+
+    for (const procUser of procurementUsers) {
+      await this.notificationsService.createNotification(
+        procUser.id,
+        'info',
+        'New Request Submitted',
+        `${request.user.firstName} ${request.user.lastName} submitted a new request: ${request.title}`,
+      );
+    }
+
+    return request;
   }
 
   async findAll(userId: number, role: string, filters?: any) {

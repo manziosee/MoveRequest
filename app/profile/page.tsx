@@ -48,12 +48,12 @@ export default function ProfilePage() {
                 <div className="flex flex-col items-center text-center space-y-4">
                   <div className="relative">
                     <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-3xl font-bold shadow-xl shadow-primary/20">
-                      {user?.name.split(' ').map(n => n[0]).join('')}
+                      {user?.firstName?.[0]}{user?.lastName?.[0]}
                     </div>
                     <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-green-500 border-4 border-white rounded-full"></div>
                   </div>
                   <div className="space-y-1">
-                    <h3 className="text-xl font-bold text-foreground">{user?.name}</h3>
+                    <h3 className="text-xl font-bold text-foreground">{user?.firstName} {user?.lastName}</h3>
                     <p className="text-sm text-muted-foreground">{user?.email}</p>
                   </div>
                   <Badge 
@@ -85,7 +85,7 @@ export default function ProfilePage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Full Name</p>
-                        <p className="font-semibold text-foreground truncate">{user?.name}</p>
+                        <p className="font-semibold text-foreground truncate">{user?.firstName} {user?.lastName}</p>
                       </div>
                     </div>
 

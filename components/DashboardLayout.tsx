@@ -21,49 +21,93 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { api } from '@/lib/api';
+import { formatDistanceToNow } from 'date-fns';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-const mockNotifications = [
-  {
-    id: '1',
-    type: 'success',
-    icon: CheckCircle2,
-    iconBg: 'bg-green-100',
-    iconColor: 'text-green-600',
-    title: 'Request Approved',
-    description: 'Your office equipment transfer request has been approved',
-    time: '2 hours ago'
-  },
-  {
-    id: '2',
-    type: 'warning',
-    icon: Clock,
-    iconBg: 'bg-amber-100',
-    iconColor: 'text-amber-600',
-    title: 'Pending Review',
-    description: 'Your stationery request is awaiting procurement review',
-    time: '1 day ago'
-  },
-  {
-    id: '3',
-    type: 'info',
-    icon: Info,
-    iconBg: 'bg-blue-100',
-    iconColor: 'text-blue-600',
-    title: 'System Update',
-    description: 'New features have been added to the request form',
-    time: '3 days ago'
-  }
-];
+interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  type: string;
+  isRead: boolean;
+  createdAt: string;
+}
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Real-time notifications
+  const handleNewNotification = useCallback((notification: any) => {
+    setNotifications(prev => [notification, ...prev].slice(0, 5));
+    setUnreadCount(prev => prev + 1);
+  }, []);
+
+  useRealtimeNotifications(user?.id || null, handleNewNotification);
+
+  // Fetch notifications
+  const fetchNotifications = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const [notifResponse, countResponse] = await Promise.all([
+        api.getNotifications(token),
+        api.getUnreadCount(token)
+      ]);
+
+      if (notifResponse.ok) {
+        const data = await notifResponse.json();
+        setNotifications(data.slice(0, 5)); // Show only 5 most recent
+      }
+
+      if (countResponse.ok) {
+        const countData = await countResponse.json();
+        setUnreadCount(countData.count || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  }, []);
+
+  const handleMarkAllRead = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await api.markAllAsRead(token);
+      if (response.ok) {
+        setUnreadCount(0);
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      }
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+    }
+  }, [user, fetchNotifications]);
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'success': return { icon: CheckCircle2, bg: 'bg-green-100', color: 'text-green-600' };
+      case 'warning': return { icon: Clock, bg: 'bg-amber-100', color: 'text-amber-600' };
+      case 'error': return { icon: AlertCircle, bg: 'bg-red-100', color: 'text-red-600' };
+      default: return { icon: Info, bg: 'bg-blue-100', color: 'text-blue-600' };
+    }
+  };
 
   const navItems = useMemo(() => {
     const baseItems = [
@@ -266,42 +310,64 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="relative h-9 w-9 rounded-full">
                     <Bell className="h-4 w-4" />
-                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-white text-[9px] rounded-full flex items-center justify-center font-semibold">
-                      3
-                    </span>
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-white text-[9px] rounded-full flex items-center justify-center font-semibold">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-80 max-w-[calc(100vw-2rem)]" align="end">
                   <DropdownMenuLabel>
                     <div className="flex items-center justify-between">
                       <span>Notifications</span>
-                      <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-primary">
-                        Mark all read
-                      </Button>
+                      {unreadCount > 0 && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-auto p-0 text-xs text-primary"
+                          onClick={handleMarkAllRead}
+                        >
+                          Mark all read
+                        </Button>
+                      )}
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   
                   <div className="max-h-80 overflow-y-auto">
-                    {mockNotifications.map((notification) => {
-                      const IconComponent = notification.icon;
-                      return (
-                        <DropdownMenuItem key={notification.id} className="p-3">
-                          <div className="flex items-start space-x-3 w-full">
-                            <div className={cn("w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0", notification.iconBg)}>
-                              <IconComponent className={cn("h-4 w-4", notification.iconColor)} />
+                    {notifications.length === 0 ? (
+                      <div className="p-8 text-center text-sm text-muted-foreground">
+                        <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p>No notifications</p>
+                      </div>
+                    ) : (
+                      notifications.map((notification) => {
+                        const iconData = getNotificationIcon(notification.type);
+                        const IconComponent = iconData.icon;
+                        return (
+                          <DropdownMenuItem key={notification.id} className="p-3">
+                            <div className="flex items-start space-x-3 w-full">
+                              <div className={cn("w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0", iconData.bg)}>
+                                <IconComponent className={cn("h-4 w-4", iconData.color)} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium">{notification.title}</p>
+                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                  {notification.message}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                                </p>
+                              </div>
+                              {!notification.isRead && (
+                                <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1" />
+                              )}
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium">{notification.title}</p>
-                              <p className="text-xs text-muted-foreground line-clamp-2">
-                                {notification.description}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">{notification.time}</p>
-                            </div>
-                          </div>
-                        </DropdownMenuItem>
-                      );
-                    })}
+                          </DropdownMenuItem>
+                        );
+                      })
+                    )}
                   </div>
 
                   <DropdownMenuSeparator />

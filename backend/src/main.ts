@@ -21,43 +21,61 @@ async function bootstrap() {
     .setDescription(`
 # Movement & Procurement Management System API
 
-Complete REST API for managing movement requests, approvals, users, and reports.
+Complete REST API with WebSocket support for managing movement requests, approvals, users, and real-time notifications.
 
 ## Features
-- 🔐 JWT Authentication with role-based access control
-- 📋 Full CRUD operations for movement requests
-- ✅ Multi-level approval workflow
+- 🔐 JWT Authentication with role-based access control (RBAC)
+- 📋 Full CRUD operations for movement requests with 4-step wizard
+- ✅ Multi-level approval workflow with comments
+- 🔔 Real-time WebSocket notifications with toast alerts
 - 📊 Real-time dashboards and analytics
-- 📈 Comprehensive reporting and exports
-- 👥 User and department management
-- 🔔 Real-time notifications
-- 📎 File upload and management
+- 📈 Comprehensive reporting with CSV/PDF/Excel exports
+- 👥 User, category, and department management
+- 📎 File upload and attachment management
+- 🔄 Bulk operations (approve, reject, export)
+- 📧 Email notifications via SendGrid
+- 💾 System backup and data export
+- 📉 User activity tracking and audit logs
+
+## Real-Time Notifications
+Connect to WebSocket at **ws://localhost:5000** with authentication:
+\`\`\`javascript
+const socket = io('http://localhost:5000', {
+  auth: { token: 'your-jwt-token' }
+});
+socket.on('notification', (data) => console.log(data));
+\`\`\`
 
 ## Authentication
-Most endpoints require authentication. Use the /auth/login endpoint to obtain a JWT token, then click the "Authorize" button above and enter: Bearer <your-token>
+Most endpoints require authentication. Use the /auth/login endpoint to obtain a JWT token, then click the "Authorize" button above and enter: **Bearer <your-token>**
 
-## Roles
-- **employee**: Can create and view own requests
-- **procurement**: Can approve/reject requests and view all requests
-- **admin**: Full system access including user and system management
+## Roles & Permissions
+- **employee**: Create and view own requests, receive approval notifications
+- **procurement**: Approve/reject all requests, view all requests, receive submission notifications
+- **admin**: Full system access including user management, categories, departments, system config, bulk operations
 
 ## Demo Accounts
-- Admin: manziosee3@gmail.com / 123456
-- Procurement: manziosee2001@gmail.com / 123456
-- Employee: oseemanzi3@gmail.com / 123456
+- **Admin**: manziosee3@gmail.com / 123456 (Full access)
+- **Procurement**: manziosee2001@gmail.com / 123456 (Approvals)
+- **Employee**: oseemanzi3@gmail.com / 123456 (Requests)
+
+## Workflow
+1. **Employee** creates request → **Procurement** users notified (WebSocket + Email)
+2. **Procurement** approves/rejects → **Employee** notified with comment (WebSocket + Email)
+3. Real-time dashboard updates and unread notification counts
     `)
     .setVersion('1.0')
     .addBearerAuth()
     .addTag('health', 'Health check and system status endpoints')
-    .addTag('auth', 'Authentication and authorization endpoints')
-    .addTag('users', 'User management and profile endpoints')
-    .addTag('requests', 'Movement request CRUD and management endpoints')
-    .addTag('approvals', 'Approval workflow and history endpoints')
-    .addTag('reports', 'Reports, analytics, and export endpoints')
-    .addTag('admin', 'Admin panel and system management endpoints')
-    .addTag('dashboard', 'Dashboard statistics and metrics endpoints')
-    .addTag('notifications', 'Notification management endpoints')
-    .addTag('files', 'File upload and management endpoints')
+    .addTag('auth', 'Authentication, registration, password reset, and profile management')
+    .addTag('users', 'User management, roles, and activity tracking')
+    .addTag('requests', 'Movement request CRUD, filtering, search, and statistics')
+    .addTag('approvals', 'Approval workflow, bulk operations, history, and comments')
+    .addTag('reports', 'Reports, analytics, exports (CSV/PDF/Excel), and financial tracking')
+    .addTag('admin', 'Admin panel: users, categories, departments, system config, backups, bulk operations')
+    .addTag('dashboard', 'Role-based dashboard statistics and real-time metrics')
+    .addTag('notifications', 'Real-time notifications, unread count, mark as read (WebSocket + REST)')
+    .addTag('files', 'File upload, download, delete, and attachment management')
     .build();
   
   const document = SwaggerModule.createDocument(app, config);

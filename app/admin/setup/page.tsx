@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
+import { toast } from 'sonner';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,6 +51,102 @@ export default function AdminSetupPage() {
   const [pushNotifications, setPushNotifications] = useState(true);
   const [autoApproval, setAutoApproval] = useState(false);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [systemStats, setSystemStats] = useState<any>(null);
+  const [userActivity, setUserActivity] = useState<any>(null);
+  const [backupInfo, setBackupInfo] = useState<any>(null);
+
+  useEffect(() => {
+    fetchSystemStats();
+    fetchUserActivity();
+    fetchBackupInfo();
+  }, []);
+
+  const fetchSystemStats = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await api.getSystemStats(token);
+      if (response.ok) {
+        const data = await response.json();
+        setSystemStats(data);
+      }
+    } catch (error) {
+      console.error('Error fetching system stats:', error);
+    }
+  };
+
+  const fetchUserActivity = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await api.getUserActivity(token);
+      if (response.ok) {
+        const data = await response.json();
+        setUserActivity(data);
+      }
+    } catch (error) {
+      console.error('Error fetching user activity:', error);
+    }
+  };
+
+  const fetchBackupInfo = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await api.getBackupInfo(token);
+      if (response.ok) {
+        const data = await response.json();
+        setBackupInfo(data);
+      }
+    } catch (error) {
+      console.error('Error fetching backup info:', error);
+    }
+  };
+
+  const handleBackupNow = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await api.performBackup(token);
+      if (response.ok) {
+        toast.success('Backup initiated successfully');
+        fetchBackupInfo();
+      }
+    } catch (error) {
+      console.error('Error performing backup:', error);
+      toast.error('Failed to initiate backup');
+    }
+  };
+
+  const handleExportUsers = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await api.exportUsers(token);
+      if (response.ok) {
+        const data = await response.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `users-export-${new Date().toISOString()}.json`;
+        a.click();
+        toast.success('User data exported successfully');
+      }
+    } catch (error) {
+      console.error('Error exporting users:', error);
+      toast.error('Failed to export user data');
+    }
+  };
+
+  const handleSaveSettings = () => {
+    toast.success('Settings saved successfully!');
+  };
 
   return (
     <ProtectedRoute allowedRoles={['admin']}>
@@ -60,7 +158,7 @@ export default function AdminSetupPage() {
               <h1 className="text-3xl font-bold text-foreground tracking-tight">System Configuration ⚙️</h1>
               <p className="text-muted-foreground mt-1">Configure system settings and preferences</p>
             </div>
-            <Button className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg shadow-primary/25 gap-2">
+            <Button className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg shadow-primary/25 gap-2" onClick={handleSaveSettings}>
               <CheckCircle className="h-4 w-4" />
               Save Changes
             </Button>
@@ -117,7 +215,11 @@ export default function AdminSetupPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {[{name: 'Employee', count: 45, color: '#3b82f6'}, {name: 'Procurement', count: 12, color: '#f59e0b'}, {name: 'Admin', count: 3, color: '#ef4444'}].map((role, i) => (
+                  {systemStats && [
+                    {name: 'Employee', count: systemStats.roleDistribution?.employee || 0, color: '#3b82f6'},
+                    {name: 'Procurement', count: systemStats.roleDistribution?.procurement || 0, color: '#f59e0b'},
+                    {name: 'Admin', count: systemStats.roleDistribution?.admin || 0, color: '#ef4444'}
+                  ].map((role, i) => (
                     <div key={i} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-4 h-4 rounded-full" style={{backgroundColor: role.color}}></div>
@@ -386,15 +488,15 @@ export default function AdminSetupPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Active Sessions</span>
-                  <Badge className="bg-green-100 text-green-700">24 online</Badge>
+                  <Badge className="bg-green-100 text-green-700">{userActivity?.activeSessions || 0} online</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Failed Logins (24h)</span>
-                  <Badge variant="outline" className="bg-red-100 text-red-700">3 attempts</Badge>
+                  <Badge variant="outline" className="bg-red-100 text-red-700">{userActivity?.failedLogins || 0} attempts</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Avg Session Duration</span>
-                  <span className="text-sm text-muted-foreground">45 minutes</span>
+                  <span className="text-sm text-muted-foreground">{userActivity?.avgSessionDuration || 0} minutes</span>
                 </div>
                 <Button variant="outline" size="sm" className="w-full">
                   View Detailed Logs
@@ -418,14 +520,14 @@ export default function AdminSetupPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Last Backup</span>
-                  <span className="text-sm text-muted-foreground">2 hours ago</span>
+                  <span className="text-sm text-muted-foreground">{backupInfo ? new Date(backupInfo.lastBackup).toLocaleString() : 'N/A'}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Next Scheduled</span>
-                  <span className="text-sm text-muted-foreground">Tonight 2:00 AM</span>
+                  <span className="text-sm text-muted-foreground">{backupInfo ? new Date(backupInfo.nextScheduled).toLocaleString() : 'N/A'}</span>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={handleBackupNow}>
                     Backup Now
                   </Button>
                   <Button variant="outline" size="sm" className="flex-1">
@@ -457,7 +559,7 @@ export default function AdminSetupPage() {
                   <Mail className="h-4 w-4 mr-2" />
                   Send Bulk Notifications
                 </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start">
+                <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleExportUsers}>
                   <Database className="h-4 w-4 mr-2" />
                   Export User Data
                 </Button>

@@ -102,18 +102,40 @@ export class AdminController {
     return this.adminService.getSystemStats();
   }
 
-  // Bulk Operations
-  @Post('bulk-approve')
-  @ApiOperation({ summary: 'Bulk approve requests' })
-  @ApiResponse({ status: 200, description: 'Requests approved successfully' })
-  bulkApproveRequests(@Body('requestIds') requestIds: string[]) {
-    return { message: 'Bulk approve not yet implemented', requestIds };
+  @Get('user-activity')
+  @ApiOperation({ summary: 'Get user activity statistics' })
+  @ApiResponse({ status: 200, description: 'Returns user activity data' })
+  getUserActivity() {
+    return this.adminService.getUserActivity();
   }
 
-  @Post('bulk-delete-users')
-  @ApiOperation({ summary: 'Bulk delete users' })
-  @ApiResponse({ status: 200, description: 'Users deleted successfully' })
-  bulkDeleteUsers(@Body('userIds') userIds: string[]) {
-    return { message: 'Bulk delete not yet implemented', userIds };
+  @Get('backup-info')
+  @ApiOperation({ summary: 'Get backup information' })
+  @ApiResponse({ status: 200, description: 'Returns backup status and schedule' })
+  getBackupInfo() {
+    return this.adminService.getBackupInfo();
   }
+
+  @Post('backup')
+  @ApiOperation({ summary: 'Perform system backup' })
+  @ApiResponse({ status: 200, description: 'Backup initiated successfully' })
+  performBackup() {
+    return this.adminService.performBackup();
+  }
+
+  @Post('bulk-approve-requests')
+  @ApiOperation({ summary: 'Bulk approve requests' })
+  @ApiResponse({ status: 200, description: 'Requests approved successfully' })
+  bulkApproveRequests(@Body('requestIds') requestIds: number[]) {
+    return this.adminService.bulkApproveRequests(requestIds);
+  }
+
+  @Get('export-users')
+  @ApiOperation({ summary: 'Export user data' })
+  @ApiResponse({ status: 200, description: 'Returns all user data for export' })
+  exportUserData() {
+    return this.adminService.exportUserData();
+  }
+
+
 }
