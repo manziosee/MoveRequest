@@ -1,65 +1,90 @@
+'use client';
+
 import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bell, CheckCircle, Clock, XCircle, AlertCircle, Package, Check } from 'lucide-react';
+import { Bell, CheckCircle, Clock, XCircle, AlertCircle, Package, Check, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { api } from '@/lib/api';
+import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
+
+interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  type: string;
+  isRead: boolean;
+  createdAt: string;
+}
 
 export default function NotificationsPage() {
-  const notifications = [
-    {
-      id: 1,
-      type: 'success',
-      title: 'Request Approved',
-      message: 'Your office equipment transfer request (REQ-045) has been approved.',
-      time: '2 hours ago',
-      read: false,
-      icon: CheckCircle,
-      color: 'text-green-600 bg-green-100',
-    },
-    {
-      id: 2,
-      type: 'pending',
-      title: 'Pending Review',
-      message: 'Your stationery request (REQ-046) is pending procurement approval.',
-      time: '5 hours ago',
-      read: false,
-      icon: Clock,
-      color: 'text-amber-600 bg-amber-100',
-    },
-    {
-      id: 3,
-      type: 'info',
-      title: 'New Comment',
-      message: 'Sarah from Procurement commented on your request REQ-044.',
-      time: '1 day ago',
-      read: true,
-      icon: AlertCircle,
-      color: 'text-blue-600 bg-blue-100',
-    },
-    {
-      id: 4,
-      type: 'rejected',
-      title: 'Request Rejected',
-      message: 'Request REQ-043 was rejected due to insufficient budget.',
-      time: '2 days ago',
-      read: true,
-      icon: XCircle,
-      color: 'text-red-600 bg-red-100',
-    },
-    {
-      id: 5,
-      type: 'info',
-      title: 'Request Submitted',
-      message: 'Your request REQ-047 has been successfully submitted.',
-      time: '3 days ago',
-      read: true,
-      icon: Package,
-      color: 'text-blue-600 bg-blue-100',
-    },
-  ];
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      setLoading(true);
+      const response = await api.getNotifications(token);
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      toast.error('Failed to load notifications');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await api.markAllAsRead(token);
+      if (response.ok) {
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        toast.success('All notifications marked as read');
+      }
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+      toast.error('Failed to mark notifications as read');
+    }
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'success': return { icon: CheckCircle, color: 'text-green-600 bg-green-100' };
+      case 'warning': return { icon: Clock, color: 'text-amber-600 bg-amber-100' };
+      case 'error': return { icon: XCircle, color: 'text-red-600 bg-red-100' };
+      default: return { icon: AlertCircle, color: 'text-blue-600 bg-blue-100' };
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  if (loading) {
+    return (
+      <ProtectedRoute>
+        <DashboardLayout>
+          <div className="flex items-center justify-center h-96">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </DashboardLayout>
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute>
@@ -80,7 +105,7 @@ export default function NotificationsPage() {
                     {unreadCount} New
                   </Badge>
                 )}
-                <Button variant="outline" size="sm" className="text-xs">
+                <Button variant="outline" size="sm" className="text-xs" onClick={handleMarkAllRead}>
                   <Check className="h-4 w-4 mr-2" />
                   Mark All Read
                 </Button>
@@ -89,7 +114,7 @@ export default function NotificationsPage() {
 
             <div className="space-y-4">
               {/* Unread Notifications */}
-              {notifications.filter(n => !n.read).length > 0 && (
+              {notifications.filter(n => !n.isRead).length > 0 && (
                 <Card className="border-primary/20 shadow-sm bg-primary/5">
                   <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-2 text-lg">
@@ -100,14 +125,15 @@ export default function NotificationsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {notifications.filter(n => !n.read).map((notification) => {
-                        const IconComponent = notification.icon;
+                      {notifications.filter(n => !n.isRead).map((notification) => {
+                        const iconData = getNotificationIcon(notification.type);
+                        const IconComponent = iconData.icon;
                         return (
                           <div
                             key={notification.id}
                             className="flex items-start gap-4 p-4 rounded-xl border bg-white/80 backdrop-blur-sm transition-all hover:shadow-md hover:bg-white cursor-pointer group"
                           >
-                            <div className={`w-12 h-12 rounded-xl ${notification.color} flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform`}>
+                            <div className={`w-12 h-12 rounded-xl ${iconData.color} flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform`}>
                               <IconComponent className="h-5 w-5" />
                             </div>
                             <div className="flex-1 min-w-0">
@@ -119,7 +145,7 @@ export default function NotificationsPage() {
                                 {notification.message}
                               </p>
                               <p className="text-xs text-muted-foreground/70 mt-3 font-medium">
-                                {notification.time}
+                                {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                               </p>
                             </div>
                           </div>
@@ -151,23 +177,24 @@ export default function NotificationsPage() {
                   ) : (
                     <div className="space-y-3">
                       {notifications.map((notification) => {
-                        const IconComponent = notification.icon;
+                        const iconData = getNotificationIcon(notification.type);
+                        const IconComponent = iconData.icon;
                         return (
                           <div
                             key={notification.id}
                             className={`flex items-start gap-4 p-4 rounded-xl border transition-all hover:shadow-md cursor-pointer group ${
-                              notification.read
+                              notification.isRead
                                 ? 'bg-white border-border/50 hover:border-border'
                                 : 'bg-primary/5 border-primary/20 hover:bg-primary/10'
                             }`}
                           >
-                            <div className={`w-12 h-12 rounded-xl ${notification.color} flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform`}>
+                            <div className={`w-12 h-12 rounded-xl ${iconData.color} flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform`}>
                               <IconComponent className="h-5 w-5" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2">
                                 <h4 className="font-semibold text-foreground text-base">{notification.title}</h4>
-                                {!notification.read && (
+                                {!notification.isRead && (
                                   <div className="w-3 h-3 rounded-full bg-primary flex-shrink-0 mt-1"></div>
                                 )}
                               </div>
@@ -175,7 +202,7 @@ export default function NotificationsPage() {
                                 {notification.message}
                               </p>
                               <p className="text-xs text-muted-foreground/70 mt-3 font-medium">
-                                {notification.time}
+                                {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                               </p>
                             </div>
                           </div>

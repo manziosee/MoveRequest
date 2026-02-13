@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,97 +24,147 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, Pencil, Trash2, Building2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Building2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { api } from '@/lib/api';
+import { formatDistanceToNow } from 'date-fns';
 
 interface Department {
-  id: string;
+  id: number;
   name: string;
-  code: string;
-  manager: string;
-  userCount: number;
-  requestCount: number;
-  active: boolean;
+  description: string | null;
+  budget: number | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
-const initialDepartments: Department[] = [
-  { id: '1', name: 'Information Technology', code: 'IT', manager: 'John Doe', userCount: 32, requestCount: 145, active: true },
-  { id: '2', name: 'Human Resources', code: 'HR', manager: 'Jane Smith', userCount: 28, requestCount: 98, active: true },
-  { id: '3', name: 'Finance', code: 'FIN', manager: 'Mike Johnson', userCount: 25, requestCount: 112, active: true },
-  { id: '4', name: 'Operations', code: 'OPS', manager: 'Sarah Williams', userCount: 45, requestCount: 167, active: true },
-  { id: '5', name: 'Marketing', code: 'MKT', manager: 'David Brown', userCount: 18, requestCount: 76, active: true },
-  { id: '6', name: 'Sales', code: 'SLS', manager: 'Emma Davis', userCount: 22, requestCount: 89, active: true },
-];
-
 export default function DepartmentsPage() {
-  const [departments, setDepartments] = useState<Department[]>(initialDepartments);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDept, setEditingDept] = useState<Department | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', code: '', manager: '' });
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [formData, setFormData] = useState({ name: '', description: '', budget: '' });
+
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
+
+  const fetchDepartments = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      setLoading(true);
+      const response = await api.getDepartments(token);
+      if (response.ok) {
+        const data = await response.json();
+        setDepartments(data);
+      }
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+      toast.error('Failed to load departments');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAdd = () => {
     setEditingDept(null);
-    setFormData({ name: '', code: '', manager: '' });
+    setFormData({ name: '', description: '', budget: '' });
     setDialogOpen(true);
   };
 
   const handleEdit = (dept: Department) => {
     setEditingDept(dept);
-    setFormData({ name: dept.name, code: dept.code, manager: dept.manager });
+    setFormData({ 
+      name: dept.name, 
+      description: dept.description || '', 
+      budget: dept.budget?.toString() || '' 
+    });
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
-    if (!formData.name.trim() || !formData.code.trim()) {
-      toast.error('Name and code are required');
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      toast.error('Department name is required');
       return;
     }
 
-    if (editingDept) {
-      setDepartments(departments.map(d =>
-        d.id === editingDept.id
-          ? { ...d, ...formData }
-          : d
-      ));
-      toast.success('Department updated successfully');
-    } else {
-      const newDept: Department = {
-        id: Date.now().toString(),
-        ...formData,
-        userCount: 0,
-        requestCount: 0,
-        active: true
-      };
-      setDepartments([...departments, newDept]);
-      toast.success('Department added successfully');
-    }
+    const token = localStorage.getItem('token');
+    if (!token) return;
 
-    setDialogOpen(false);
+    const payload = {
+      name: formData.name,
+      description: formData.description || null,
+      budget: formData.budget ? parseFloat(formData.budget) : null
+    };
+
+    try {
+      if (editingDept) {
+        const response = await api.updateDepartment(token, editingDept.id.toString(), payload);
+        if (response.ok) {
+          toast.success('Department updated successfully');
+          fetchDepartments();
+        } else {
+          toast.error('Failed to update department');
+        }
+      } else {
+        const response = await api.createDepartment(token, payload);
+        if (response.ok) {
+          toast.success('Department added successfully');
+          fetchDepartments();
+        } else {
+          toast.error('Failed to create department');
+        }
+      }
+      setDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving department:', error);
+      toast.error('Failed to save department');
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: number) => {
     setDeletingId(id);
     setDeleteConfirmOpen(true);
   };
 
-  const confirmDelete = () => {
-    if (deletingId) {
-      setDepartments(departments.filter(d => d.id !== deletingId));
-      toast.success('Department deleted successfully');
+  const confirmDelete = async () => {
+    if (!deletingId) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await api.deleteDepartment(token, deletingId.toString());
+      if (response.ok) {
+        toast.success('Department deleted successfully');
+        fetchDepartments();
+      } else {
+        toast.error('Failed to delete department');
+      }
       setDeleteConfirmOpen(false);
       setDeletingId(null);
+    } catch (error) {
+      console.error('Error deleting department:', error);
+      toast.error('Failed to delete department');
     }
   };
 
-  const toggleActive = (id: string) => {
-    setDepartments(departments.map(d =>
-      d.id === id ? { ...d, active: !d.active } : d
-    ));
-    toast.success('Department status updated');
-  };
+  if (loading) {
+    return (
+      <ProtectedRoute allowedRoles={['admin']}>
+        <DashboardLayout>
+          <div className="flex items-center justify-center h-96">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </DashboardLayout>
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute allowedRoles={['admin']}>
@@ -143,74 +193,77 @@ export default function DepartmentsPage() {
               <CardDescription>View and manage organization departments</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border border-gray-200/60 overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/30">
-                      <TableHead>Department</TableHead>
-                      <TableHead>Code</TableHead>
-                      <TableHead>Manager</TableHead>
-                      <TableHead>Users</TableHead>
-                      <TableHead>Requests</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {departments.map((dept) => (
-                      <TableRow key={dept.id}>
-                        <TableCell className="font-medium">{dept.name}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="font-mono bg-blue-50 text-blue-700 border-blue-200">
-                            {dept.code}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{dept.manager}</TableCell>
-                        <TableCell>{dept.userCount}</TableCell>
-                        <TableCell>{dept.requestCount}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={dept.active ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-700 border-gray-200'}
-                          >
-                            {dept.active ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleActive(dept.id)}
-                              className="h-8"
-                            >
-                              {dept.active ? 'Deactivate' : 'Activate'}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(dept)}
-                              className="h-8 gap-2"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                              Edit
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(dept.id)}
-                              className="h-8 gap-2 text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              Delete
-                            </Button>
-                          </div>
-                        </TableCell>
+              {departments.length === 0 ? (
+                <div className="text-center py-12">
+                  <Building2 className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+                  <p className="text-lg font-medium text-muted-foreground mb-2">No departments yet</p>
+                  <p className="text-sm text-muted-foreground/70 mb-4">
+                    Create your first department to get started
+                  </p>
+                  <Button onClick={handleAdd} variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Department
+                  </Button>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-gray-200/60 overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/30">
+                        <TableHead>Department</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Budget (RWF)</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {departments.map((dept) => (
+                        <TableRow key={dept.id}>
+                          <TableCell className="font-medium">{dept.name}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {dept.description || 'No description'}
+                          </TableCell>
+                          <TableCell>
+                            {dept.budget ? (
+                              <Badge variant="outline" className="font-mono bg-green-50 text-green-700 border-green-200">
+                                {dept.budget.toLocaleString()}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">N/A</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {formatDistanceToNow(new Date(dept.createdAt), { addSuffix: true })}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(dept)}
+                                className="h-8 gap-2"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(dept.id)}
+                                className="h-8 gap-2 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                Delete
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -234,22 +287,22 @@ export default function DepartmentsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="code">Department Code *</Label>
+                  <Label htmlFor="description">Description</Label>
                   <Input
-                    id="code"
-                    value={formData.code}
-                    onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                    placeholder="e.g., IT"
-                    maxLength={5}
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Brief description of this department"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="manager">Manager Name</Label>
+                  <Label htmlFor="budget">Budget (RWF)</Label>
                   <Input
-                    id="manager"
-                    value={formData.manager}
-                    onChange={(e) => setFormData({ ...formData, manager: e.target.value })}
-                    placeholder="e.g., John Doe"
+                    id="budget"
+                    type="number"
+                    value={formData.budget}
+                    onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                    placeholder="e.g., 1000000"
                   />
                 </div>
               </div>

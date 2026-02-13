@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ApprovalsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async getPendingRequests() {
     return this.prisma.movementRequest.findMany({
@@ -24,15 +28,65 @@ export class ApprovalsService {
   }
 
   async approveRequest(requestId: number, comment: string, approverId: number) {
-    await this.prisma.movementRequest.update({ where: { id: requestId }, data: { status: 'approved' } });
-    await this.prisma.approval.create({ data: { requestId, approverId, status: 'approved', comments: comment } });
-    return this.prisma.movementRequest.findUnique({ where: { id: requestId }, include: { items: true, user: true } });
+    const request = await this.prisma.movementRequest.findUnique({
+      where: { id: requestId },
+      include: { user: true },
+    });
+
+    if (!request) throw new Error('Request not found');
+
+    await this.prisma.movementRequest.update({ 
+      where: { id: requestId }, 
+      data: { status: 'approved' } 
+    });
+    
+    await this.prisma.approval.create({ 
+      data: { requestId, approverId, status: 'approved', comments: comment } 
+    });
+
+    // Notify the requester with real-time notification
+    await this.notificationsService.createNotification(
+      request.userId,
+      'success',
+      'Request Approved',
+      `Your request "${request.title}" has been approved.${comment ? ` Comment: ${comment}` : ''}`,
+    );
+
+    return this.prisma.movementRequest.findUnique({ 
+      where: { id: requestId }, 
+      include: { items: true, user: true } 
+    });
   }
 
   async rejectRequest(requestId: number, reason: string, approverId: number) {
-    await this.prisma.movementRequest.update({ where: { id: requestId }, data: { status: 'rejected' } });
-    await this.prisma.approval.create({ data: { requestId, approverId, status: 'rejected', comments: reason } });
-    return this.prisma.movementRequest.findUnique({ where: { id: requestId }, include: { items: true, user: true } });
+    const request = await this.prisma.movementRequest.findUnique({
+      where: { id: requestId },
+      include: { user: true },
+    });
+
+    if (!request) throw new Error('Request not found');
+
+    await this.prisma.movementRequest.update({ 
+      where: { id: requestId }, 
+      data: { status: 'rejected' } 
+    });
+    
+    await this.prisma.approval.create({ 
+      data: { requestId, approverId, status: 'rejected', comments: reason } 
+    });
+
+    // Notify the requester with real-time notification
+    await this.notificationsService.createNotification(
+      request.userId,
+      'error',
+      'Request Rejected',
+      `Your request "${request.title}" has been rejected. Reason: ${reason}`,
+    );
+
+    return this.prisma.movementRequest.findUnique({ 
+      where: { id: requestId }, 
+      include: { items: true, user: true } 
+    });
   }
 
   async bulkApprove(requestIds: number[], approverId: number) {

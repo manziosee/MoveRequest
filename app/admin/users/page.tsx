@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,110 +52,120 @@ import {
   Mail,
   Calendar,
   TrendingUp,
-  Activity
+  Activity,
+  Loader2
 } from 'lucide-react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line
-} from 'recharts';
+import { api } from '@/lib/api';
+import { formatDistanceToNow } from 'date-fns';
 
-const mockUsers = [
-  { 
-    id: 1, 
-    name: 'John Employee', 
-    email: 'employee@company.com', 
-    role: 'employee', 
-    department: 'IT',
-    status: 'active',
-    lastLogin: '2 hours ago',
-    requests: 24
-  },
-  { 
-    id: 2, 
-    name: 'Sarah Procurement', 
-    email: 'procurement@company.com', 
-    role: 'procurement', 
-    department: 'Procurement',
-    status: 'active',
-    lastLogin: '30 mins ago',
-    requests: 156
-  },
-  { 
-    id: 3, 
-    name: 'Admin User', 
-    email: 'admin@company.com', 
-    role: 'admin', 
-    department: 'Administration',
-    status: 'active',
-    lastLogin: '5 mins ago',
-    requests: 89
-  },
-  { 
-    id: 4, 
-    name: 'Mike Johnson', 
-    email: 'mike.j@company.com', 
-    role: 'employee', 
-    department: 'Finance',
-    status: 'active',
-    lastLogin: '1 day ago',
-    requests: 12
-  },
-  { 
-    id: 5, 
-    name: 'Emma Wilson', 
-    email: 'emma.w@company.com', 
-    role: 'employee', 
-    department: 'HR',
-    status: 'active',
-    lastLogin: '3 hours ago',
-    requests: 18
-  },
-  { 
-    id: 6, 
-    name: 'David Brown', 
-    email: 'david.b@company.com', 
-    role: 'employee', 
-    department: 'Operations',
-    status: 'inactive',
-    lastLogin: '2 weeks ago',
-    requests: 8
-  },
-];
-
-const userGrowthData = [
-  { month: 'Jan', users: 120 },
-  { month: 'Feb', users: 135 },
-  { month: 'Mar', users: 142 },
-  { month: 'Apr', users: 156 },
-];
-
-const roleDistribution = [
-  { name: 'Employees', value: 148, color: '#2563EB' },
-  { name: 'Procurement', value: 6, color: '#16A34A' },
-  { name: 'Admins', value: 2, color: '#9333EA' },
-];
-
-const departmentActivity = [
-  { name: 'IT', requests: 45, users: 32 },
-  { name: 'HR', requests: 38, users: 28 },
-  { name: 'Finance', requests: 42, users: 25 },
-  { name: 'Operations', requests: 35, users: 30 },
-  { name: 'Procurement', requests: 15, users: 8 },
-];
+interface User {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  department: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function AdminUsersPage() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newUser, setNewUser] = useState({
+    email: '',
+    password: '',
+    firstName: '',
+    lastName: '',
+    role: 'employee',
+    department: ''
+  });
+
+  useEffect(() => {
+    fetchUsers();
+    fetchStats();
+  }, []);
+
+  const fetchUsers = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await api.getUsers(token);
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to load users');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await api.getUserStats(token);
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data);
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  const handleCreateUser = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await api.createUser(token, newUser);
+      if (response.ok) {
+        toast.success('User created successfully!');
+        setShowAddDialog(false);
+        fetchUsers();
+        setNewUser({
+          email: '',
+          password: '',
+          firstName: '',
+          lastName: '',
+          role: 'employee',
+          department: ''
+        });
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Failed to create user');
+      }
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast.error('Failed to create user');
+    }
+  };
+
+  const handleToggleActive = async (userId: number) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await api.toggleUserActive(token, userId.toString());
+      if (response.ok) {
+        toast.success('User status updated');
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error('Error toggling user status:', error);
+      toast.error('Failed to update user status');
+    }
+  };
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -168,17 +178,32 @@ export default function AdminUsersPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    return status === 'active'
+  const getStatusBadge = (isActive: boolean) => {
+    return isActive
       ? 'bg-green-100 text-green-700 border-green-200'
       : 'bg-gray-100 text-gray-700 border-gray-200';
   };
 
-  const filteredUsers = mockUsers.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredUsers = users.filter(user =>
+    `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.department.toLowerCase().includes(searchTerm.toLowerCase())
+    (user.department && user.department.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const activeUsers = users.filter(u => u.isActive).length;
+  const departments = [...new Set(users.map(u => u.department).filter(Boolean))].length;
+
+  if (loading) {
+    return (
+      <ProtectedRoute allowedRoles={['admin']}>
+        <DashboardLayout>
+          <div className="flex items-center justify-center h-96">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </DashboardLayout>
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute allowedRoles={['admin']}>
@@ -207,8 +232,7 @@ export default function AdminUsersPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-1">Total Users</p>
-                    <p className="text-3xl font-bold text-foreground">156</p>
-                    <p className="text-xs text-green-600 mt-1">↑ 14 new this month</p>
+                    <p className="text-3xl font-bold text-foreground">{users.length}</p>
                   </div>
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
                     <Users className="h-6 w-6 text-white" />
@@ -223,8 +247,8 @@ export default function AdminUsersPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-1">Active Users</p>
-                    <p className="text-3xl font-bold text-foreground">148</p>
-                    <p className="text-xs text-green-600 mt-1">95% activity rate</p>
+                    <p className="text-3xl font-bold text-foreground">{activeUsers}</p>
+                    <p className="text-xs text-green-600 mt-1">{users.length > 0 ? Math.round((activeUsers / users.length) * 100) : 0}% activity rate</p>
                   </div>
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30">
                     <Activity className="h-6 w-6 text-white" />
@@ -239,7 +263,7 @@ export default function AdminUsersPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-1">Departments</p>
-                    <p className="text-3xl font-bold text-foreground">12</p>
+                    <p className="text-3xl font-bold text-foreground">{departments}</p>
                     <p className="text-xs text-muted-foreground mt-1">All active</p>
                   </div>
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
@@ -254,86 +278,14 @@ export default function AdminUsersPage() {
               <CardContent className="p-6 relative">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Avg. Requests</p>
-                    <p className="text-3xl font-bold text-foreground">18</p>
-                    <p className="text-xs text-amber-600 mt-1">Per user/month</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Roles</p>
+                    <p className="text-3xl font-bold text-foreground">3</p>
+                    <p className="text-xs text-amber-600 mt-1">Admin, Procurement, Employee</p>
                   </div>
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
-                    <TrendingUp className="h-6 w-6 text-white" />
+                    <Shield className="h-6 w-6 text-white" />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Charts Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="border-gray-200/60 shadow-sm hover:shadow-md transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-base">User Growth</CardTitle>
-                <CardDescription>New users per month</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={userGrowthData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="month" fontSize={12} />
-                    <YAxis fontSize={12} />
-                    <Tooltip />
-                    <Line 
-                      type="monotone" 
-                      dataKey="users" 
-                      stroke="#2563EB" 
-                      strokeWidth={2}
-                      dot={{ fill: '#2563EB', r: 4 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card className="border-gray-200/60 shadow-sm hover:shadow-md transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-base">Role Distribution</CardTitle>
-                <CardDescription>Users by role</CardDescription>
-              </CardHeader>
-              <CardContent className="flex items-center justify-center">
-                <ResponsiveContainer width="100%" height={200}>
-                  <PieChart>
-                    <Pie
-                      data={roleDistribution}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={70}
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
-                    >
-                      {roleDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card className="border-gray-200/60 shadow-sm hover:shadow-md transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-base">Department Activity</CardTitle>
-                <CardDescription>Users vs requests</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={departmentActivity}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="name" fontSize={11} />
-                    <YAxis fontSize={12} />
-                    <Tooltip />
-                    <Bar dataKey="users" fill="#2563EB" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="requests" fill="#16A34A" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
               </CardContent>
             </Card>
           </div>
@@ -366,8 +318,7 @@ export default function AdminUsersPage() {
                       <TableHead>Role</TableHead>
                       <TableHead>Department</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Last Login</TableHead>
-                      <TableHead>Requests</TableHead>
+                      <TableHead>Joined</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -378,11 +329,11 @@ export default function AdminUsersPage() {
                           <div className="flex items-center gap-3">
                             <Avatar className="h-9 w-9 ring-2 ring-primary/10">
                               <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-xs font-semibold">
-                                {user.name.split(' ').map(n => n[0]).join('')}
+                                {user.firstName[0]}{user.lastName[0]}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-medium text-foreground">{user.name}</p>
+                              <p className="font-medium text-foreground">{user.firstName} {user.lastName}</p>
                               <p className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Mail className="h-3 w-3" />
                                 {user.email}
@@ -398,22 +349,19 @@ export default function AdminUsersPage() {
                         <TableCell>
                           <div className="flex items-center gap-2 text-sm">
                             <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                            {user.department}
+                            {user.department || 'N/A'}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={getStatusBadge(user.status)}>
-                            {user.status}
+                          <Badge variant="outline" className={getStatusBadge(user.isActive)}>
+                            {user.isActive ? 'active' : 'inactive'}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Calendar className="h-3.5 w-3.5" />
-                            {user.lastLogin}
+                            {formatDistanceToNow(new Date(user.createdAt), { addSuffix: true })}
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium text-foreground">{user.requests}</div>
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -433,8 +381,11 @@ export default function AdminUsersPage() {
                                 <Shield className="mr-2 h-4 w-4" />
                                 Change Role
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">
-                                Deactivate User
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onClick={() => handleToggleActive(user.id)}
+                              >
+                                {user.isActive ? 'Deactivate' : 'Activate'} User
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -458,16 +409,36 @@ export default function AdminUsersPage() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" placeholder="John Doe" />
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input 
+                    id="firstName" 
+                    placeholder="John" 
+                    value={newUser.firstName}
+                    onChange={(e) => setNewUser({...newUser, firstName: e.target.value})}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input 
+                    id="lastName" 
+                    placeholder="Doe" 
+                    value={newUser.lastName}
+                    onChange={(e) => setNewUser({...newUser, lastName: e.target.value})}
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="john@company.com" />
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="john@company.com" 
+                    value={newUser.email}
+                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="role">Role</Label>
-                  <Select>
+                  <Select value={newUser.role} onValueChange={(value) => setNewUser({...newUser, role: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
@@ -480,32 +451,29 @@ export default function AdminUsersPage() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="department">Department</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="IT">IT</SelectItem>
-                      <SelectItem value="HR">HR</SelectItem>
-                      <SelectItem value="Finance">Finance</SelectItem>
-                      <SelectItem value="Operations">Operations</SelectItem>
-                      <SelectItem value="Procurement">Procurement</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input 
+                    id="department" 
+                    placeholder="IT" 
+                    value={newUser.department}
+                    onChange={(e) => setNewUser({...newUser, department: e.target.value})}
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="password">Temporary Password</Label>
-                  <Input id="password" type="password" placeholder="••••••••" />
+                  <Input 
+                    id="password" 
+                    type="password" 
+                    placeholder="••••••••" 
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                  />
                 </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setShowAddDialog(false)}>
                   Cancel
                 </Button>
-                <Button onClick={() => {
-                  toast.success('User created successfully!');
-                  setShowAddDialog(false);
-                }}>
+                <Button onClick={handleCreateUser}>
                   Create User
                 </Button>
               </DialogFooter>

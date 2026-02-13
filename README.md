@@ -61,6 +61,7 @@ cd MoveRequest
 - 🎯 **Lucide React** - Beautiful icons
 - 🔔 **Sonner** - Toast notifications
 - 📊 **Recharts** - Data visualization
+- 🔌 **Socket.IO Client** - Real-time WebSocket
 
 </td>
 <td width="50%">
@@ -73,6 +74,8 @@ cd MoveRequest
 - 🔐 **JWT + bcrypt** - Secure authentication
 - 📖 **Swagger/OpenAPI** - Auto-generated docs
 - ✅ **Class Validator** - Request validation
+- 🔌 **Socket.IO** - WebSocket real-time events
+- 📧 **SendGrid** - Email notifications
 
 </td>
 </tr>
@@ -136,16 +139,24 @@ cd MoveRequest
 ✅ Role assignment & permissions  
 ✅ Category management  
 ✅ Department management  
-✅ System configuration  
-✅ Activity monitoring  
-✅ Bulk operations  
+✅ System configuration & monitoring  
+✅ Activity tracking & audit logs  
+✅ Bulk operations (approve/reject)  
+✅ Data export (users, requests)  
+✅ System backup management  
+✅ User activity reports  
 
 ### 🔔 Notifications
 
-✅ Real-time notifications  
-✅ Email notifications  
+✅ Real-time WebSocket notifications  
+✅ Toast notifications with Sonner  
+✅ Email notifications via SendGrid  
 ✅ Unread count tracking  
 ✅ Mark as read functionality  
+✅ Notification history & audit trail  
+✅ Auto-connect on login  
+✅ Request submission alerts  
+✅ Approval/rejection alerts  
 
 </td>
 </tr>
@@ -155,27 +166,34 @@ cd MoveRequest
 
 ```
 ├── app/                    # Next.js App Router pages
-│   ├── dashboard/         # Role-specific dashboards
-│   ├── requests/          # Request management
-│   ├── approvals/         # Approval workflows
-│   ├── reports/           # Analytics & reporting
-│   ├── admin/             # Admin panel
+│   ├── dashboard/         # Role-specific dashboards with real-time stats
+│   ├── requests/          # Request management with 4-step wizard
+│   ├── approvals/         # Approval workflows with comments
+│   ├── reports/           # Analytics & reporting with exports
+│   ├── admin/             # Admin panel (users, categories, departments, setup)
+│   ├── notifications/     # Real-time notification center
+│   ├── profile/           # User profile management
 │   ├── login/             # Authentication
 │   └── forgot-password/   # Password recovery
 ├── backend/               # NestJS API server
 │   ├── src/
-│   │   ├── auth/          # Authentication module
-│   │   ├── requests/      # Request management
-│   │   ├── approvals/     # Approval workflows
+│   │   ├── auth/          # Authentication & JWT
+│   │   ├── requests/      # Request management & notifications
+│   │   ├── approvals/     # Approval workflows & notifications
 │   │   ├── users/         # User management
-│   │   ├── admin/         # Admin operations
-│   │   └── common/        # Shared utilities
+│   │   ├── admin/         # Admin operations & bulk actions
+│   │   ├── notifications/ # WebSocket gateway & notification service
+│   │   ├── dashboard/     # Dashboard statistics
+│   │   ├── reports/       # Reports & exports
+│   │   ├── files/         # File management
+│   │   └── common/        # Shared utilities & guards
 │   └── Dockerfile         # Backend container
 ├── components/            # Reusable UI components
-├── contexts/             # React contexts
-├── lib/                  # Utilities & configurations
-├── docker-compose.yml    # Full stack deployment
-├── postman-collection.json # API testing
+├── contexts/             # React contexts (Auth, Theme)
+├── hooks/                # Custom React hooks (useRealtimeNotifications)
+├── lib/                  # Utilities & API client
+├── docker-compose.yml    # Full stack deployment with WebSocket
+├── postman-collection.json # 60+ API endpoints
 └── deploy.sh             # One-command deployment
 ```
 
@@ -243,14 +261,14 @@ Import **`postman-collection.json`** into Postman for instant API testing!
 | Category | Endpoints | Description |
 |----------|-----------|-------------|
 | 🔐 **Authentication** | 6 | Login, register, password reset, profile |
-| 📊 **Dashboard** | 3 | Employee, procurement, admin stats |
+| 📊 **Dashboard** | 3 | Employee, procurement, admin real-time stats |
 | 📋 **Requests** | 7 | CRUD, filtering, search, statistics |
 | ✅ **Approvals** | 5 | Approve, reject, bulk operations, history |
 | 👥 **Users** | 7 | User management, roles, activity |
-| 🔔 **Notifications** | 4 | Get, mark read, unread count |
+| 🔔 **Notifications** | 4 | Get, mark read, unread count, WebSocket |
 | 🏢 **Admin - Categories** | 4 | Category CRUD operations |
-| 🏛️ **Admin - Departments** | 5 | Department management |
-| ⚙️ **Admin - System** | 3 | System config, logs |
+| 🏛️ **Admin - Departments** | 5 | Department management with budgets |
+| ⚙️ **Admin - System** | 8 | System stats, user activity, backups, bulk ops, exports |
 | 📈 **Reports** | 6 | Summary, export (CSV/PDF/Excel) |
 | 📎 **Files** | 5 | Upload, download, delete |
 | 💓 **Health** | 2 | Health checks |
@@ -353,17 +371,21 @@ docker-compose exec backend ls -la /app/data/
 - ⚡ **Performance** - Code splitting, lazy loading
 - 🌙 **Dark Mode Ready** - Theme support built-in
 - 🎯 **Intuitive Navigation** - Clear user flows
+- 🔔 **Toast Notifications** - Real-time feedback with Sonner
+- 🔄 **Real-time Updates** - WebSocket-powered live data
 
 ## 🔒 Security Features
 
 - 🔐 **JWT Authentication** - Secure token-based auth
 - 🔑 **Password Hashing** - bcrypt with salt rounds
-- 🛡️ **RBAC** - Role-based access control
+- 🛡️ **RBAC** - Role-based access control (employee, procurement, admin)
 - ✅ **Input Validation** - Class-validator sanitization
 - 🚦 **Rate Limiting** - API abuse prevention
 - 🌐 **CORS** - Configured cross-origin policies
-- 💉 **SQL Injection Prevention** - TypeORM parameterized queries
+- 💉 **SQL Injection Prevention** - Prisma parameterized queries
 - 🔒 **XSS Protection** - Content security policies
+- 🔌 **WebSocket Auth** - JWT-based socket authentication
+- 🔑 **Password Reset** - Secure token-based recovery
 
 ## 📈 Performance Optimizations
 
@@ -375,6 +397,8 @@ docker-compose exec backend ls -la /app/data/
 - 📦 **Code Splitting** - Dynamic imports, lazy loading
 - 💾 **Caching Strategy** - Browser & server-side caching
 - 🚀 **CDN Ready** - Static asset optimization
+- 🔌 **WebSocket Pooling** - Efficient real-time connections
+- 📊 **Database Indexing** - Optimized Prisma queries
 
 ## 📸 Screenshots
 
