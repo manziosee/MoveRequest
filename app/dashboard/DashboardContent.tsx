@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Plus, Home, RefreshCw, FileText, Clock, CheckCircle, XCircle, 
-  TrendingUp, Users, Package, AlertTriangle, Building2
+  TrendingUp, Users, Package, AlertTriangle, Building2, Loader2
 } from 'lucide-react';
 import { 
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
@@ -14,45 +14,8 @@ import {
   ComposedChart, Area
 } from 'recharts';
 import Link from 'next/link';
-
-// Movement Request System Data
-const monthlyRequestsData = [
-  { month: 'Jan', pending: 12, approved: 25, rejected: 3, total: 40 },
-  { month: 'Feb', pending: 8, approved: 30, rejected: 2, total: 40 },
-  { month: 'Mar', pending: 15, approved: 28, rejected: 5, total: 48 },
-  { month: 'Apr', pending: 10, approved: 35, rejected: 1, total: 46 },
-  { month: 'May', pending: 14, approved: 32, rejected: 4, total: 50 },
-  { month: 'Jun', pending: 9, approved: 38, rejected: 3, total: 50 },
-];
-
-const statusData = [
-  { name: 'Approved', value: 188, color: '#22c55e' },
-  { name: 'Pending', value: 68, color: '#f59e0b' },
-  { name: 'Rejected', value: 18, color: '#ef4444' },
-  { name: 'Draft', value: 12, color: '#6b7280' },
-];
-
-const priorityData = [
-  { priority: 'High', count: 35, color: '#ef4444' },
-  { priority: 'Medium', count: 78, color: '#f59e0b' },
-  { priority: 'Low', count: 56, color: '#22c55e' },
-];
-
-const departmentData = [
-  { name: 'IT', requests: 45, value: 35000000 },
-  { name: 'HR', requests: 32, value: 12000000 },
-  { name: 'Finance', requests: 28, value: 18000000 },
-  { name: 'Operations', requests: 38, value: 28000000 },
-  { name: 'Marketing', requests: 22, value: 15000000 },
-];
-
-const categoryData = [
-  { name: 'Office Equipment', value: 85, color: '#2E5AAC' },
-  { name: 'IT Hardware', value: 62, color: '#F5C518' },
-  { name: 'Furniture', value: 48, color: '#E57373' },
-  { name: 'Stationery', value: 35, color: '#4CAF50' },
-  { name: 'Vehicles', value: 24, color: '#64B5F6' },
-];
+import { useEffect, useState } from 'react';
+import { api } from '@/lib/api';
 
 // Format currency in RWF
 const formatCurrency = (value: number) => {
@@ -63,6 +26,42 @@ const formatCurrency = (value: number) => {
 
 export default function DashboardContent() {
   const { user } = useAuth();
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      if (!user) return;
+      
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await api.getDashboardStats(token);
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardStats();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user || !stats) return null;
 
   const EmployeeDashboard = () => (
     <div className="space-y-6 animate-fade-in">
@@ -103,7 +102,7 @@ export default function DashboardContent() {
               <p className="text-xs text-muted-foreground font-medium">Total Requests</p>
               <FileText className="h-4 w-4 text-blue-600" />
             </div>
-            <p className="text-3xl font-bold text-blue-600">24</p>
+            <p className="text-3xl font-bold text-blue-600">{stats.totalRequests || 0}</p>
           </CardContent>
         </Card>
 
@@ -113,7 +112,7 @@ export default function DashboardContent() {
               <p className="text-xs text-muted-foreground font-medium">Pending</p>
               <Clock className="h-4 w-4 text-amber-600" />
             </div>
-            <p className="text-3xl font-bold text-amber-600">8</p>
+            <p className="text-3xl font-bold text-amber-600">{stats.pending || 0}</p>
           </CardContent>
         </Card>
 
@@ -123,7 +122,7 @@ export default function DashboardContent() {
               <p className="text-xs text-muted-foreground font-medium">Approved</p>
               <CheckCircle className="h-4 w-4 text-green-600" />
             </div>
-            <p className="text-3xl font-bold text-green-600">14</p>
+            <p className="text-3xl font-bold text-green-600">{stats.approved || 0}</p>
           </CardContent>
         </Card>
 
@@ -133,7 +132,7 @@ export default function DashboardContent() {
               <p className="text-xs text-muted-foreground font-medium">Rejected</p>
               <XCircle className="h-4 w-4 text-red-600" />
             </div>
-            <p className="text-3xl font-bold text-red-600">2</p>
+            <p className="text-3xl font-bold text-red-600">{stats.rejected || 0}</p>
           </CardContent>
         </Card>
       </div>

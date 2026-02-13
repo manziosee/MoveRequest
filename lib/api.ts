@@ -1,6 +1,10 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export const api = {
+  // Health
+  root: () => fetch(`${API_URL}/`),
+  health: () => fetch(`${API_URL}/health`),
+
   // Auth
   login: (email: string, password: string) =>
     fetch(`${API_URL}/auth/login`, {
@@ -30,13 +34,124 @@ export const api = {
       body: JSON.stringify({ token, password }),
     }),
 
-  // Dashboard
-  getDashboardStats: (token: string) =>
-    fetch(`${API_URL}/dashboard/stats`, {
+  changePassword: (token: string, oldPassword: string, newPassword: string) =>
+    fetch(`${API_URL}/auth/change-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ oldPassword, newPassword }),
+    }),
+
+  getAuthProfile: (token: string) =>
+    fetch(`${API_URL}/auth/profile`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
+  // Users
+  getUsers: (token: string) =>
+    fetch(`${API_URL}/users`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  createUser: (token: string, data: any) =>
+    fetch(`${API_URL}/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    }),
+
+  getUserStats: (token: string) =>
+    fetch(`${API_URL}/users/stats`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  getProfile: (token: string) =>
+    fetch(`${API_URL}/users/profile`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  updateProfile: (token: string, data: any) =>
+    fetch(`${API_URL}/users/profile`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    }),
+
+  getActivity: (token: string) =>
+    fetch(`${API_URL}/users/activity`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  getUser: (token: string, id: string) =>
+    fetch(`${API_URL}/users/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  updateUser: (token: string, id: string, data: any) =>
+    fetch(`${API_URL}/users/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    }),
+
+  updateUserRole: (token: string, id: string, role: string) =>
+    fetch(`${API_URL}/users/${id}/role`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ role }),
+    }),
+
+  toggleUserActive: (token: string, id: string) =>
+    fetch(`${API_URL}/users/${id}/toggle-active`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  changeOwnPassword: (token: string, oldPassword: string, newPassword: string) =>
+    fetch(`${API_URL}/users/change-password`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ oldPassword, newPassword }),
+    }),
+
+  adminChangeUserPassword: (token: string, id: string, newPassword: string) =>
+    fetch(`${API_URL}/users/${id}/password`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ newPassword }),
+    }),
+
   // Requests
+  createRequest: (token: string, data: any) =>
+    fetch(`${API_URL}/requests`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    }),
+
   getRequests: (token: string, filters?: any) => {
     const params = new URLSearchParams(filters);
     return fetch(`${API_URL}/requests?${params}`, {
@@ -54,16 +169,6 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  createRequest: (token: string, data: any) =>
-    fetch(`${API_URL}/requests`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    }),
-
   updateRequest: (token: string, id: string, data: any) =>
     fetch(`${API_URL}/requests/${id}`, {
       method: 'PUT',
@@ -74,14 +179,10 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
-  cancelRequest: (token: string, id: string, reason: string) =>
-    fetch(`${API_URL}/requests/${id}/cancel`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ reason }),
+  deleteRequest: (token: string, id: string) =>
+    fetch(`${API_URL}/requests/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
     }),
 
   // Approvals
@@ -95,123 +196,64 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  approveRequest: (token: string, requestId: string, comment: string) =>
+  approveRequest: (token: string, requestId: string, comments?: string) =>
     fetch(`${API_URL}/approvals/${requestId}/approve`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ comment }),
+      body: JSON.stringify({ comments }),
     }),
 
-  rejectRequest: (token: string, requestId: string, reason: string) =>
+  rejectRequest: (token: string, requestId: string, comments?: string) =>
     fetch(`${API_URL}/approvals/${requestId}/reject`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ reason }),
+      body: JSON.stringify({ comments }),
     }),
 
-  bulkApprove: (token: string, requestIds: string[]) =>
+  bulkApprove: (token: string, requestIds: string[], comments?: string) =>
     fetch(`${API_URL}/approvals/bulk-approve`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ requestIds }),
+      body: JSON.stringify({ requestIds, comments }),
     }),
 
-  // Notifications
-  getNotifications: (token: string) =>
-    fetch(`${API_URL}/notifications`, {
+  // Reports
+  getReportStats: (token: string) =>
+    fetch(`${API_URL}/reports/dashboard-stats`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  getUnreadCount: (token: string) =>
-    fetch(`${API_URL}/notifications/unread-count`, {
+  getMonthlyTrends: (token: string) =>
+    fetch(`${API_URL}/reports/monthly-trends`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  markAsRead: (token: string, id: string) =>
-    fetch(`${API_URL}/notifications/${id}/read`, {
-      method: 'PATCH',
+  getDepartmentStats: (token: string) =>
+    fetch(`${API_URL}/reports/department-stats`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  markAllAsRead: (token: string) =>
-    fetch(`${API_URL}/notifications/mark-all-read`, {
-      method: 'PATCH',
+  getStatusDistribution: (token: string) =>
+    fetch(`${API_URL}/reports/status-distribution`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  // Users
-  getUsers: (token: string) =>
-    fetch(`${API_URL}/users`, {
+  getPriorityBreakdown: (token: string) =>
+    fetch(`${API_URL}/reports/priority-breakdown`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  getUserStats: (token: string) =>
-    fetch(`${API_URL}/users/stats`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-
-  getProfile: (token: string) =>
-    fetch(`${API_URL}/users/profile`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-
-  getActivity: (token: string) =>
-    fetch(`${API_URL}/users/activity`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-
-  updateProfile: (token: string, data: any) =>
-    fetch(`${API_URL}/users/profile`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    }),
-
-  createUser: (token: string, data: any) =>
-    fetch(`${API_URL}/users`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    }),
-
-  updateUser: (token: string, id: string, data: any) =>
-    fetch(`${API_URL}/users/${id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    }),
-
-  changePassword: (token: string, newPassword: string) =>
-    fetch(`${API_URL}/users/change-password`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ newPassword }),
-    }),
-
-  toggleUserActive: (token: string, id: string) =>
-    fetch(`${API_URL}/users/${id}/toggle-active`, {
-      method: 'PATCH',
+  exportReport: (token: string, format: string = 'json') =>
+    fetch(`${API_URL}/reports/export?format=${format}`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
@@ -306,37 +348,89 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  // Reports
-  getReportStats: (token: string) =>
-    fetch(`${API_URL}/reports/dashboard-stats`, {
+  bulkApproveRequests: (token: string, requestIds: string[]) =>
+    fetch(`${API_URL}/admin/bulk-approve`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ requestIds }),
+    }),
+
+  bulkDeleteUsers: (token: string, userIds: string[]) =>
+    fetch(`${API_URL}/admin/bulk-delete-users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ userIds }),
+    }),
+
+  // Dashboard
+  getDashboardStats: (token: string) =>
+    fetch(`${API_URL}/dashboard/stats`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  getMonthlyTrends: (token: string) =>
-    fetch(`${API_URL}/reports/monthly-trends`, {
+  // Notifications
+  getNotifications: (token: string) =>
+    fetch(`${API_URL}/notifications`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  getDepartmentStats: (token: string) =>
-    fetch(`${API_URL}/reports/department-stats`, {
+  getUnreadCount: (token: string) =>
+    fetch(`${API_URL}/notifications/unread-count`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  getStatusDistribution: (token: string) =>
-    fetch(`${API_URL}/reports/status-distribution`, {
+  markAsRead: (token: string, id: string) =>
+    fetch(`${API_URL}/notifications/${id}/read`, {
+      method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  getPriorityBreakdown: (token: string) =>
-    fetch(`${API_URL}/reports/priority-breakdown`, {
+  markAllAsRead: (token: string) =>
+    fetch(`${API_URL}/notifications/mark-all-read`, {
+      method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  exportReport: (token: string, format: string = 'csv') =>
-    fetch(`${API_URL}/reports/export?format=${format}`, {
+  // Files
+  uploadFile: (token: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return fetch(`${API_URL}/files/upload`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+  },
+
+  uploadFileToRequest: (token: string, requestId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return fetch(`${API_URL}/files/upload/${requestId}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+  },
+
+  getRequestFiles: (token: string, requestId: string) =>
+    fetch(`${API_URL}/files/request/${requestId}`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  // Health
-  health: () => fetch(`${API_URL}/health`),
+  downloadFile: (token: string, fileId: string) =>
+    fetch(`${API_URL}/files/download/${fileId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  deleteFile: (token: string, fileId: string) =>
+    fetch(`${API_URL}/files/${fileId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
 };

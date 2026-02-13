@@ -42,9 +42,9 @@ cd MoveRequest
 
 | Role | Email | Password | Access Level |
 |------|-------|----------|-------------|
-| 🔴 **Admin** | admin@company.com | password | Full system access |
-| 🟡 **Procurement** | procurement@company.com | password | Approval workflows |
-| 🟢 **Employee** | employee@company.com | password | Create & track requests |
+| 🔴 **Admin** | manziosee3@gmail.com | 123456 | Full system access |
+| 🟡 **Procurement** | manziosee2001@gmail.com | 123456 | Approval workflows |
+| 🟢 **Employee** | oseemanzi3@gmail.com | 123456 | Create & track requests |
 
 ## 🛠️ Tech Stack
 
