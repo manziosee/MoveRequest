@@ -219,12 +219,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="flex items-center space-x-3">
                 <Avatar className="h-10 w-10 ring-2 ring-primary/10">
                   <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold text-sm">
-                    {user.name.split(' ').map(n => n[0]).join('')}
+                    {user.firstName?.[0]}{user.lastName?.[0]}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-foreground truncate">
-                    {user.name}
+                    {user.firstName} {user.lastName}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">{user.department}</p>
                 </div>
@@ -319,7 +319,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                     <Avatar className="h-9 w-9">
                       <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-xs font-semibold">
-                        {user.name.split(' ').map(n => n[0]).join('')}
+                        {user.firstName?.[0]}{user.lastName?.[0]}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -327,7 +327,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <DropdownMenuContent className="w-56" align="end">
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-semibold">{user.name}</p>
+                      <p className="text-sm font-semibold">{user.firstName} {user.lastName}</p>
                       <p className="text-xs text-muted-foreground">{user.email}</p>
                       <Badge variant="outline" className={cn('mt-2 w-fit text-xs', roleBadgeClass)}>
                         {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}

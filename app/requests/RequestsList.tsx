@@ -8,14 +8,26 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Search, Filter, Eye, FileText, Clock, CheckCircle, XCircle, TrendingUp } from 'lucide-react';
-import { mockDataService, MovementRequest } from '@/lib/mockData';
+import { Plus, Search, Filter, Eye, FileText, Clock, CheckCircle, XCircle, TrendingUp, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { api } from '@/lib/api';
+
+interface Request {
+  id: number;
+  title: string;
+  status: string;
+  priority: string;
+  department: string;
+  category: string;
+  totalAmount: number;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function RequestsList() {
-  const [requests, setRequests] = useState<MovementRequest[]>([]);
-  const [filteredRequests, setFilteredRequests] = useState<MovementRequest[]>([]);
+  const [requests, setRequests] = useState<Request[]>([]);
+  const [filteredRequests, setFilteredRequests] = useState<Request[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -26,10 +38,16 @@ export default function RequestsList() {
 
   const loadRequests = async () => {
     try {
-      const data = await mockDataService.getRequests();
-      setRequests(data);
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await api.getRequests(token);
+      if (response.ok) {
+        const data = await response.json();
+        setRequests(data);
+      }
     } catch (error) {
-      console.error('Failed to load requests');
+      console.error('Failed to load requests:', error);
     } finally {
       setLoading(false);
     }
@@ -41,7 +59,7 @@ export default function RequestsList() {
     if (searchTerm) {
       filtered = filtered.filter(req =>
         req.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        req.id.toLowerCase().includes(searchTerm.toLowerCase())
+        req.id.toString().includes(searchTerm)
       );
     }
 
@@ -77,11 +95,8 @@ export default function RequestsList() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
-        </div>
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -351,7 +366,7 @@ export default function RequestsList() {
                     <TableHead className="font-semibold">Status</TableHead>
                     <TableHead className="font-semibold">Priority</TableHead>
                     <TableHead className="font-semibold">Department</TableHead>
-                    <TableHead className="font-semibold">Needed By</TableHead>
+                    <TableHead className="font-semibold">Category</TableHead>
                     <TableHead className="font-semibold">Created</TableHead>
                     <TableHead className="text-right font-semibold">Actions</TableHead>
                   </TableRow>
@@ -359,7 +374,7 @@ export default function RequestsList() {
                 <TableBody>
                   {filteredRequests.map((request) => (
                     <TableRow key={request.id} className="hover:bg-muted/20 transition-colors">
-                      <TableCell className="font-mono text-sm">{request.id}</TableCell>
+                      <TableCell className="font-mono text-sm">#{request.id}</TableCell>
                       <TableCell className="font-medium">{request.title}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={getStatusColor(request.status)}>
@@ -372,7 +387,7 @@ export default function RequestsList() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{request.department}</TableCell>
-                      <TableCell className="text-sm">{format(new Date(request.neededBy), 'MMM dd, yyyy')}</TableCell>
+                      <TableCell className="text-sm">{request.category}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{format(new Date(request.createdAt), 'MMM dd, yyyy')}</TableCell>
                       <TableCell className="text-right">
                         <Link href={`/requests/${request.id}`}>
