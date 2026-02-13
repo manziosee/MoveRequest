@@ -148,33 +148,6 @@ export default function LoginPage() {
                 )}
               </Button>
             </form>
-
-            <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-              <h3 className="text-sm sm:text-base font-semibold text-foreground mb-2 sm:mb-3 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                Demo Accounts
-              </h3>
-              <div className="space-y-2 text-xs sm:text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Employee:</span>
-                  <code className="font-mono text-xs bg-white px-2 py-0.5 rounded">employee@company.com</code>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Procurement:</span>
-                  <code className="font-mono text-xs bg-white px-2 py-0.5 rounded">procurement@company.com</code>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Admin:</span>
-                  <code className="font-mono text-xs bg-white px-2 py-0.5 rounded">admin@company.com</code>
-                </div>
-                <div className="pt-2 border-t border-blue-200 mt-3">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Password:</span>
-                    <code className="font-mono text-xs bg-white px-2 py-0.5 rounded font-semibold">password</code>
-                  </div>
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
 

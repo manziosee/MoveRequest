@@ -271,9 +271,9 @@ After running `npm run seed`, these accounts are available:
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | admin@company.com | password |
-| Procurement | procurement@company.com | password |
-| Employee | employee@company.com | password |
+| Admin | manziosee3@gmail.com | 123456 |
+| Procurement | manziosee2001@gmail.com | 123456 |
+| Employee | oseemanzi3@gmail.com | 123456 |
 
 ### Using Postman
 

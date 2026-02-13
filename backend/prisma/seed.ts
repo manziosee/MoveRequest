@@ -12,6 +12,7 @@ async function main() {
   console.log('🌱 Seeding database...');
 
   // Clear existing data
+  console.log('🗑️  Clearing existing data...');
   await prisma.file.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.approval.deleteMany();
@@ -20,16 +21,28 @@ async function main() {
   await prisma.user.deleteMany();
   await prisma.category.deleteMany();
   await prisma.department.deleteMany();
+  console.log('✅ Existing data cleared');
 
-  // Create users
-  const hashedPassword = await bcrypt.hash('password', 10);
+  // Reset auto-increment sequences
+  await prisma.$executeRaw`ALTER SEQUENCE users_id_seq RESTART WITH 1`;
+  await prisma.$executeRaw`ALTER SEQUENCE categories_id_seq RESTART WITH 1`;
+  await prisma.$executeRaw`ALTER SEQUENCE departments_id_seq RESTART WITH 1`;
+  await prisma.$executeRaw`ALTER SEQUENCE movement_requests_id_seq RESTART WITH 1`;
+  await prisma.$executeRaw`ALTER SEQUENCE request_items_id_seq RESTART WITH 1`;
+  await prisma.$executeRaw`ALTER SEQUENCE approvals_id_seq RESTART WITH 1`;
+  await prisma.$executeRaw`ALTER SEQUENCE notifications_id_seq RESTART WITH 1`;
+  await prisma.$executeRaw`ALTER SEQUENCE files_id_seq RESTART WITH 1`;
+  console.log('✅ Sequences reset');
+
+  // Create users with new credentials
+  const hashedPassword = await bcrypt.hash('123456', 10);
 
   const admin = await prisma.user.create({
     data: {
-      email: 'admin@company.com',
+      email: 'manziosee3@gmail.com',
       password: hashedPassword,
-      firstName: 'Admin',
-      lastName: 'User',
+      firstName: 'Manzi',
+      lastName: 'Osee',
       role: 'admin',
       department: 'Management',
     },
@@ -37,10 +50,10 @@ async function main() {
 
   const procurement = await prisma.user.create({
     data: {
-      email: 'procurement@company.com',
+      email: 'manziosee2001@gmail.com',
       password: hashedPassword,
-      firstName: 'Procurement',
-      lastName: 'Officer',
+      firstName: 'Irakoze',
+      lastName: 'Keza',
       role: 'procurement',
       department: 'Procurement',
     },
@@ -48,16 +61,19 @@ async function main() {
 
   const employee = await prisma.user.create({
     data: {
-      email: 'employee@company.com',
+      email: 'oseemanzi3@gmail.com',
       password: hashedPassword,
-      firstName: 'John',
-      lastName: 'Doe',
+      firstName: 'Simbi',
+      lastName: 'Marie',
       role: 'employee',
       department: 'IT',
     },
   });
 
-  console.log('✅ Users created');
+  console.log('✅ Users created:');
+  console.log('   - Admin: manziosee3@gmail.com / 123456');
+  console.log('   - Procurement: manziosee2001@gmail.com / 123456');
+  console.log('   - Employee: oseemanzi3@gmail.com / 123456');
 
   // Create categories
   await prisma.category.createMany({

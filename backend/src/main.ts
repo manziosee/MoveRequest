@@ -7,7 +7,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
   app.enableCors({
-    origin: process.env.FRONTEND_URL ? [process.env.FRONTEND_URL, 'http://localhost:3000', 'http://localhost:3001'] : true,
+    origin: process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'https://move-request.vercel.app'],
     credentials: true,
   });
   
@@ -42,9 +42,9 @@ Most endpoints require authentication. Use the /auth/login endpoint to obtain a 
 - **admin**: Full system access including user and system management
 
 ## Demo Accounts
-- Admin: admin@company.com / password
-- Procurement: procurement@company.com / password
-- Employee: employee@company.com / password
+- Admin: manziosee3@gmail.com / 123456
+- Procurement: manziosee2001@gmail.com / 123456
+- Employee: oseemanzi3@gmail.com / 123456
     `)
     .setVersion('1.0')
     .addBearerAuth()
