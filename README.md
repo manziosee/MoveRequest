@@ -38,14 +38,6 @@ cd MoveRequest
 | 📚 **API Docs** | http://localhost/api/docs | Swagger/OpenAPI documentation |
 | 💓 **Health Check** | http://localhost/health | System status |
 
-### 👤 Demo Accounts
-
-| Role | Email | Password | Access Level |
-|------|-------|----------|-------------|
-| 🔴 **Admin** | manziosee3@gmail.com | 123456 | Full system access |
-| 🟡 **Procurement** | manziosee2001@gmail.com | 123456 | Approval workflows |
-| 🟢 **Employee** | oseemanzi3@gmail.com | 123456 | Create & track requests |
-
 ## 🛠️ Tech Stack
 
 <table>

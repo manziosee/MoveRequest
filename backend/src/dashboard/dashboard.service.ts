@@ -39,7 +39,9 @@ export class DashboardService {
     const requests = await this.prisma.movementRequest.findMany({ include: { items: true } });
     const totalValue = requests.reduce((sum, req) => sum + req.totalAmount, 0);
 
-    const departments = await this.prisma.movementRequest.findMany({ distinct: ['department'] });
+    const departments = await this.prisma.movementRequest.groupBy({
+      by: ['department'],
+    });
     const thisMonth = await this.prisma.movementRequest.count({
       where: { createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } }
     });
@@ -59,9 +61,11 @@ export class DashboardService {
     const totalUsers = await this.prisma.user.count();
     const activeUsers = await this.prisma.user.count({ where: { isActive: true } });
     
-    const departments = await this.prisma.movementRequest.findMany({ distinct: ['department'] });
-    const categories = await this.prisma.movementRequest.findMany({ distinct: ['category'] });
-    const locations = await this.prisma.movementRequest.findMany({ select: { department: true }, distinct: ['department'] });
+    const departments = await this.prisma.department.count();
+    const categories = await this.prisma.category.count();
+    const locations = await this.prisma.movementRequest.groupBy({
+      by: ['department'],
+    });
 
     const approved = await this.prisma.movementRequest.count({ where: { status: 'approved' } });
     const approvalRate = totalRequests > 0 ? Math.round((approved / totalRequests) * 100) : 0;
@@ -73,8 +77,8 @@ export class DashboardService {
       totalRequests,
       totalUsers,
       activeUsers,
-      departments: departments.length,
-      categories: categories.length,
+      departments,
+      categories,
       locations: locations.length,
       systemHealth: 98,
       approvalRate,

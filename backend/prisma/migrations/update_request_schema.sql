@@ -1,0 +1,20 @@
+-- Update MovementRequest table schema
+ALTER TABLE "movement_requests" 
+  DROP COLUMN IF EXISTS "description",
+  DROP COLUMN IF EXISTS "category",
+  ADD COLUMN IF NOT EXISTS "neededBy" TIMESTAMP NOT NULL DEFAULT NOW(),
+  ADD COLUMN IF NOT EXISTS "fromLocation" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "toLocation" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "purpose" TEXT NOT NULL DEFAULT '',
+  ALTER COLUMN "department" SET NOT NULL,
+  ALTER COLUMN "department" DROP DEFAULT,
+  ALTER COLUMN "status" SET DEFAULT 'pending';
+
+-- Update RequestItem table schema
+ALTER TABLE "request_items"
+  DROP COLUMN IF EXISTS "unitPrice",
+  DROP COLUMN IF EXISTS "totalPrice",
+  DROP COLUMN IF EXISTS "specifications",
+  ADD COLUMN IF NOT EXISTS "category" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "unit" TEXT NOT NULL DEFAULT 'pcs',
+  ADD COLUMN IF NOT EXISTS "estimatedCost" DOUBLE PRECISION NOT NULL DEFAULT 0;
