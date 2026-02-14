@@ -18,7 +18,40 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ArrowLeft, Edit, Ban, Download, FileText, Paperclip } from 'lucide-react';
-import { mockDataService, MovementRequest } from '@/lib/mockData';
+import { api } from '@/lib/api';
+
+interface MovementRequest {
+  id: number;
+  title: string;
+  department: string;
+  priority: string;
+  status: string;
+  neededBy: string;
+  fromLocation: string;
+  toLocation: string;
+  purpose: string;
+  createdAt: string;
+  updatedAt: string;
+  userId: number;
+  items: Array<{
+    id: number;
+    name: string;
+    category: string;
+    quantity: number;
+    unit: string;
+    estimatedCost: number;
+  }>;
+  user?: {
+    firstName: string;
+    lastName: string;
+  };
+  approvals?: any[];
+  attachments?: any[];
+  rejectionReason?: string;
+  createdBy?: number;
+  approvedBy?: number;
+  approvalHistory?: any[];
+}
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -40,10 +73,19 @@ export default function RequestDetails({ requestId }: RequestDetailsProps) {
 
   const loadRequest = useCallback(async () => {
     try {
-      const data = await mockDataService.getRequest(requestId);
-      setRequest(data);
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await api.getRequest(token, requestId);
+      if (response.ok) {
+        const data = await response.json();
+        setRequest(data);
+      } else {
+        toast.error('Failed to load request');
+      }
     } catch (error) {
-      console.error('Failed to load request');
+      console.error('Failed to load request:', error);
+      toast.error('Failed to load request');
     } finally {
       setLoading(false);
     }
@@ -61,11 +103,23 @@ export default function RequestDetails({ requestId }: RequestDetailsProps) {
 
     setCancelling(true);
     try {
-      await mockDataService.cancelRequest(requestId, cancelReason);
-      toast.success('Request cancelled successfully');
-      setCancelDialogOpen(false);
-      loadRequest();
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await api.updateRequest(token, requestId, {
+        status: 'cancelled',
+        rejectionReason: cancelReason,
+      });
+
+      if (response.ok) {
+        toast.success('Request cancelled successfully');
+        setCancelDialogOpen(false);
+        loadRequest();
+      } else {
+        toast.error('Failed to cancel request');
+      }
     } catch (error) {
+      console.error('Cancel error:', error);
       toast.error('Failed to cancel request');
     } finally {
       setCancelling(false);

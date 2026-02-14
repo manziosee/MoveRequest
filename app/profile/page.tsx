@@ -1,16 +1,60 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { User, Mail, Briefcase, Shield, Edit, Key } from 'lucide-react';
+import { User, Mail, Briefcase, Shield, Edit, Key, Loader2 } from 'lucide-react';
+import { api } from '@/lib/api';
+import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const [activities, setActivities] = useState<any[]>([]);
+  const [loadingActivity, setLoadingActivity] = useState(true);
+
+  useEffect(() => {
+    loadActivity();
+  }, []);
+
+  const loadActivity = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await api.getActivity(token);
+      if (response.ok) {
+        const data = await response.json();
+        setActivities(data.slice(0, 5)); // Show last 5 activities
+      }
+    } catch (error) {
+      console.error('Failed to load activity:', error);
+    } finally {
+      setLoadingActivity(false);
+    }
+  };
+
+  const getActivityIcon = (action: string) => {
+    if (action.includes('login') || action.includes('Login')) return '🔐';
+    if (action.includes('password') || action.includes('Password')) return '🔑';
+    if (action.includes('profile') || action.includes('Profile')) return '👁️';
+    if (action.includes('request') || action.includes('Request')) return '📋';
+    if (action.includes('approv') || action.includes('Approv')) return '✅';
+    return '📌';
+  };
+
+  const getActivityColor = (action: string) => {
+    if (action.includes('login') || action.includes('Login')) return 'bg-green-100 text-green-700';
+    if (action.includes('password') || action.includes('Password')) return 'bg-purple-100 text-purple-700';
+    if (action.includes('profile') || action.includes('Profile')) return 'bg-blue-100 text-blue-700';
+    if (action.includes('request') || action.includes('Request')) return 'bg-amber-100 text-amber-700';
+    if (action.includes('approv') || action.includes('Approv')) return 'bg-green-100 text-green-700';
+    return 'bg-gray-100 text-gray-700';
+  };
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
@@ -140,25 +184,41 @@ export default function ProfilePage() {
               <CardDescription>Recent activity on your account</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {[
-                  { action: 'Logged in', time: '2 hours ago', icon: '🔐', color: 'bg-green-100 text-green-700' },
-                  { action: 'Profile viewed', time: '1 day ago', icon: '👁️', color: 'bg-blue-100 text-blue-700' },
-                  { action: 'Password changed', time: '1 week ago', icon: '🔑', color: 'bg-purple-100 text-purple-700' },
-                ].map((activity, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors border border-border/30">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-8 h-8 rounded-lg ${activity.color} flex items-center justify-center text-sm`}>
-                        {activity.icon}
+              {loadingActivity ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : activities.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No recent activity</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {activities.map((activity, index) => {
+                    const timestamp = activity.timestamp ? new Date(activity.timestamp) : null;
+                    const isValidDate = timestamp && !isNaN(timestamp.getTime());
+                    
+                    return (
+                      <div key={index} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors border border-border/30">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-8 h-8 rounded-lg ${getActivityColor(activity.action)} flex items-center justify-center text-sm`}>
+                            {getActivityIcon(activity.action)}
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm text-foreground">{activity.action}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {isValidDate 
+                                ? formatDistanceToNow(timestamp, { addSuffix: true })
+                                : 'Recently'
+                              }
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-sm text-foreground">{activity.action}</p>
-                        <p className="text-xs text-muted-foreground">{activity.time}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

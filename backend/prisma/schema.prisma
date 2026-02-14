@@ -26,17 +26,19 @@ model User {
 }
 
 model MovementRequest {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String?
-  category    String
-  priority    String   @default("medium")
-  status      String   @default("draft")
-  department  String?
-  totalAmount Float    @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  userId      Int
+  id           Int      @id @default(autoincrement())
+  title        String
+  department   String
+  priority     String   @default("medium")
+  status       String   @default("pending")
+  neededBy     DateTime
+  fromLocation String
+  toLocation   String
+  purpose      String   @db.Text
+  totalAmount  Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  userId       Int
 
   user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   items     RequestItem[]
@@ -47,13 +49,13 @@ model MovementRequest {
 }
 
 model RequestItem {
-  id             Int     @id @default(autoincrement())
-  name           String
-  quantity       Int
-  unitPrice      Float
-  totalPrice     Float
-  specifications String?
-  requestId      Int
+  id            Int     @id @default(autoincrement())
+  name          String
+  category      String
+  quantity      Int
+  unit          String
+  estimatedCost Float
+  requestId     Int
 
   request MovementRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
 

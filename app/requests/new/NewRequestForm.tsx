@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,16 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { mockDataService, RequestItem } from '@/lib/mockData';
+import { api } from '@/lib/api';
+
+interface RequestItem {
+  id: string;
+  name: string;
+  category: string;
+  quantity: number;
+  unit: string;
+  estimatedCost: number;
+}
 import Link from 'next/link';
 
 interface FormData {
@@ -47,16 +56,48 @@ const initialFormData: FormData = {
   items: [{ id: '1', name: '', category: '', quantity: 1, unit: 'pcs', estimatedCost: 0 }]
 };
 
-const departments = ['IT', 'HR', 'Finance', 'Operations', 'Marketing', 'Sales'];
-const categories = ['Electronics', 'Furniture', 'Stationery', 'Equipment', 'Supplies', 'Other'];
 const units = ['pcs', 'box', 'kg', 'liter', 'meter', 'set'];
 
 export default function NewRequestForm() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
   const { user } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    loadFormData();
+  }, []);
+
+  const loadFormData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const [deptResponse, catResponse] = await Promise.all([
+        api.getDepartments(token),
+        api.getCategories(token)
+      ]);
+
+      if (deptResponse.ok) {
+        const deptData = await deptResponse.json();
+        setDepartments(deptData.map((d: any) => d.name));
+      }
+
+      if (catResponse.ok) {
+        const catData = await catResponse.json();
+        setCategories(catData.map((c: any) => c.name));
+      }
+    } catch (error) {
+      console.error('Failed to load form data:', error);
+      toast.error('Failed to load form data');
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   const updateFormData = (field: keyof FormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -109,25 +150,37 @@ export default function NewRequestForm() {
   const handleSubmit = async (isDraft: boolean = false) => {
     if (!user) return;
 
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('Authentication required');
+      return;
+    }
+
     setLoading(true);
     try {
       const requestData = {
-        ...formData,
-        status: isDraft ? 'draft' as const : 'pending' as const,
-        createdBy: user.id,
-        department: user.department,
+        title: formData.title,
+        department: formData.department,
+        priority: formData.priority,
         neededBy: formData.neededBy!.toISOString(),
+        fromLocation: formData.fromLocation,
+        toLocation: formData.toLocation,
+        purpose: formData.purpose,
+        items: formData.items.map(({ id, ...item }) => item),
       };
 
-      await mockDataService.createRequest(requestData);
+      const response = await api.createRequest(token, requestData);
       
-      toast.success(
-        isDraft ? 'Request saved as draft' : 'Request submitted successfully'
-      );
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create request');
+      }
       
+      toast.success('Request submitted successfully');
       router.push('/requests');
-    } catch (error) {
-      toast.error('Failed to save request');
+    } catch (error: any) {
+      console.error('Request creation error:', error);
+      toast.error(error.message || 'Failed to save request');
     } finally {
       setLoading(false);
     }
@@ -494,6 +547,15 @@ export default function NewRequestForm() {
 
   return (
     <div className="p-3 sm:p-6 max-w-4xl mx-auto animate-fade-in">
+      {loadingData ? (
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading form data...</p>
+          </div>
+        </div>
+      ) : (
+        <>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">New Movement Request 📝</h1>
@@ -555,6 +617,8 @@ export default function NewRequestForm() {
           )}
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "MoveRequest API Collection",
-    "description": "Complete API collection for MoveRequest - Movement & Procurement Management System\n\nBuilt with NestJS, TypeScript, and SQLite\n\n**Base URL**: http://localhost:5000\n**API Docs**: http://localhost:5000/api\n\n**Demo Accounts**:\n- Admin: admin@company.com / password\n- Procurement: procurement@company.com / password\n- Employee: employee@company.com / password",
+    "description": "Complete API collection for MoveRequest - Movement & Procurement Management System with Real-Time WebSocket Notifications\n\nBuilt with NestJS, TypeScript, PostgreSQL, Prisma, and Socket.IO\n\n**Base URL**: http://localhost:5000 or https://moverequest.onrender.com\n**API Docs**: http://localhost:5000/api\n**WebSocket**: ws://localhost:5000 or wss://moverequest.onrender.com\n\n**Demo Accounts**:\n- Admin: manziosee3@gmail.com / 123456\n- Procurement: manziosee2001@gmail.com / 123456\n- Employee: oseemanzi3@gmail.com / 123456\n\n**Features**:\n- Real-time WebSocket notifications\n- Complete CRUD for requests, users, categories, departments\n- Approval workflows with comments\n- File uploads and attachments\n- Reports and exports (CSV, PDF, Excel)\n- User activity tracking\n- System backup and monitoring",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -50,7 +50,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@company.com\",\n  \"password\": \"password\"\n}",
+              "raw": "{\n  \"email\": \"manziosee3@gmail.com\",\n  \"password\": \"123456\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -243,7 +243,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Office Supplies Request\",\n  \"description\": \"Need office supplies for Q1\",\n  \"category\": \"Office Supplies\",\n  \"priority\": \"medium\",\n  \"department\": \"IT\",\n  \"items\": [\n    {\n      \"name\": \"Laptop\",\n      \"quantity\": 2,\n      \"unitPrice\": 50000,\n      \"specifications\": \"Dell XPS 15\"\n    }\n  ]\n}",
+              "raw": "{\n  \"title\": \"Office Equipment Request\",\n  \"department\": \"IT\",\n  \"priority\": \"medium\",\n  \"neededBy\": \"2024-12-31T09:00:00.000Z\",\n  \"fromLocation\": \"Main Office - Floor 3\",\n  \"toLocation\": \"Branch Office - Floor 1\",\n  \"purpose\": \"Need equipment for new office setup\",\n  \"items\": [\n    {\n      \"name\": \"Laptop\",\n      \"category\": \"Electronics\",\n      \"quantity\": 2,\n      \"unit\": \"pcs\",\n      \"estimatedCost\": 50000\n    },\n    {\n      \"name\": \"Office Chair\",\n      \"category\": \"Furniture\",\n      \"quantity\": 5,\n      \"unit\": \"pcs\",\n      \"estimatedCost\": 15000\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -495,31 +495,37 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/users/1/activity",
+              "raw": "{{base_url}}/users/activity",
               "host": ["{{base_url}}"],
-              "path": ["users", "1", "activity"]
-            }
+              "path": ["users", "activity"]
+            },
+            "description": "Get current user's activity history"
           }
         },
         {
-          "name": "Update User Role",
+          "name": "Toggle User Active Status",
           "request": {
             "method": "PATCH",
             "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"role\": \"procurement\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
-              "raw": "{{base_url}}/users/1/role",
+              "raw": "{{base_url}}/users/1/toggle-active",
               "host": ["{{base_url}}"],
-              "path": ["users", "1", "role"]
-            }
+              "path": ["users", "1", "toggle-active"]
+            },
+            "description": "Toggle user active/inactive status (Admin only)"
+          }
+        },
+        {
+          "name": "Get User Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/stats",
+              "host": ["{{base_url}}"],
+              "path": ["users", "stats"]
+            },
+            "description": "Get user statistics (Admin only)"
           }
         }
       ]
@@ -569,10 +575,11 @@
             "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/notifications/read-all",
+              "raw": "{{base_url}}/notifications/mark-all-read",
               "host": ["{{base_url}}"],
-              "path": ["notifications", "read-all"]
-            }
+              "path": ["notifications", "mark-all-read"]
+            },
+            "description": "Mark all notifications as read for current user"
           }
         }
       ]
@@ -735,15 +742,103 @@
       "name": "Admin - System",
       "item": [
         {
+          "name": "Get System Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/system-stats",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "system-stats"]
+            },
+            "description": "Get system statistics (users, requests, approvals)"
+          }
+        },
+        {
+          "name": "Get User Activity",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/user-activity",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "user-activity"]
+            },
+            "description": "Get all users activity history"
+          }
+        },
+        {
+          "name": "Get Backup Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/backup-info",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "backup-info"]
+            },
+            "description": "Get database backup information"
+          }
+        },
+        {
+          "name": "Perform Backup",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/backup",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "backup"]
+            },
+            "description": "Trigger manual database backup"
+          }
+        },
+        {
+          "name": "Bulk Approve Requests",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requestIds\": [1, 2, 3]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/bulk-approve-requests",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "bulk-approve-requests"]
+            },
+            "description": "Bulk approve multiple requests (Admin only)"
+          }
+        },
+        {
+          "name": "Export Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/export-users",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "export-users"]
+            },
+            "description": "Export all users data"
+          }
+        },
+        {
           "name": "Get System Config",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/system/config",
+              "raw": "{{base_url}}/admin/system-config",
               "host": ["{{base_url}}"],
-              "path": ["admin", "system", "config"]
-            }
+              "path": ["admin", "system-config"]
+            },
+            "description": "Get system configuration"
           }
         },
         {
@@ -761,22 +856,11 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/admin/system/config",
+              "raw": "{{base_url}}/admin/system-config",
               "host": ["{{base_url}}"],
-              "path": ["admin", "system", "config"]
-            }
-          }
-        },
-        {
-          "name": "Get System Logs",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/admin/system/logs",
-              "host": ["{{base_url}}"],
-              "path": ["admin", "system", "logs"]
-            }
+              "path": ["admin", "system-config"]
+            },
+            "description": "Update system configuration"
           }
         }
       ]
