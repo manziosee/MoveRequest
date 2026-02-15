@@ -217,10 +217,38 @@ export default function NewRequestForm() {
     </div>
   );
 
-  const StepContent = () => {
-    switch (currentStep) {
-      case 1:
-        return (
+  if (loadingData) {
+    return (
+      <div className="p-3 sm:p-6 max-w-4xl mx-auto animate-fade-in">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading form data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-3 sm:p-6 max-w-4xl mx-auto animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">New Movement Request 📝</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">Create a new movement or procurement request</p>
+        </div>
+        <Link href="/requests" className="w-full sm:w-auto">
+          <Button variant="outline" className="w-full sm:w-auto gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Requests
+          </Button>
+        </Link>
+      </div>
+
+      <StepIndicator />
+
+      {/* Step 1: Basic Information */}
+      {currentStep === 1 && (
           <Card className="border-gray-200/60 shadow-sm">
             <CardHeader>
               <CardTitle>Basic Information</CardTitle>
@@ -323,10 +351,10 @@ export default function NewRequestForm() {
               </div>
             </CardContent>
           </Card>
-        );
+      )}
 
-      case 2:
-        return (
+      {/* Step 2: Movement Details */}
+      {currentStep === 2 && (
           <Card className="border-gray-200/60 shadow-sm">
             <CardHeader>
               <CardTitle>Movement Details</CardTitle>
@@ -367,10 +395,10 @@ export default function NewRequestForm() {
               </div>
             </CardContent>
           </Card>
-        );
+      )}
 
-      case 3:
-        return (
+      {/* Step 3: Items */}
+      {currentStep === 3 && (
           <Card className="border-gray-200/60 shadow-sm">
             <CardHeader>
               <CardTitle>Items</CardTitle>
@@ -468,10 +496,10 @@ export default function NewRequestForm() {
               </div>
             </CardContent>
           </Card>
-        );
+      )}
 
-      case 4:
-        return (
+      {/* Step 4: Review */}
+      {currentStep === 4 && (
           <Card className="border-gray-200/60 shadow-sm">
             <CardHeader>
               <CardTitle>Review & Submit</CardTitle>
@@ -538,41 +566,9 @@ export default function NewRequestForm() {
               </div>
             </CardContent>
           </Card>
-        );
+      )}
 
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div className="p-3 sm:p-6 max-w-4xl mx-auto animate-fade-in">
-      {loadingData ? (
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading form data...</p>
-          </div>
-        </div>
-      ) : (
-        <>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">New Movement Request 📝</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">Create a new movement or procurement request</p>
-        </div>
-        <Link href="/requests" className="w-full sm:w-auto">
-          <Button variant="outline" className="w-full sm:w-auto gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Requests
-          </Button>
-        </Link>
-      </div>
-
-      <StepIndicator />
-      <StepContent />
-
-      <div className="flex flex-col sm:flex-row justify-between mt-6 sm:mt-8 gap-3">
+      {/* Navigation Buttons */}      <div className="flex flex-col sm:flex-row justify-between mt-6 sm:mt-8 gap-3">
         <div>
           {currentStep > 1 && (
             <Button
@@ -617,8 +613,6 @@ export default function NewRequestForm() {
           )}
         </div>
       </div>
-        </>
-      )}
     </div>
   );
 }
