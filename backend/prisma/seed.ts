@@ -82,6 +82,10 @@ async function main() {
       { name: 'IT Equipment', description: 'Computers, laptops, and IT hardware' },
       { name: 'Furniture', description: 'Office furniture and fixtures' },
       { name: 'Travel', description: 'Travel and accommodation expenses' },
+      { name: 'Electronics', description: 'Electronic devices and accessories' },
+      { name: 'Software', description: 'Software licenses and subscriptions' },
+      { name: 'Stationery', description: 'Writing materials and paper products' },
+      { name: 'Maintenance', description: 'Maintenance and repair supplies' },
     ],
   });
 
@@ -94,6 +98,12 @@ async function main() {
       { name: 'HR', description: 'Human Resources', budget: 500000 },
       { name: 'Finance', description: 'Finance Department', budget: 750000 },
       { name: 'Procurement', description: 'Procurement Department', budget: 2000000 },
+      { name: 'Marketing', description: 'Marketing and Communications', budget: 800000 },
+      { name: 'Sales', description: 'Sales Department', budget: 1200000 },
+      { name: 'Operations', description: 'Operations Management', budget: 900000 },
+      { name: 'Legal', description: 'Legal and Compliance', budget: 600000 },
+      { name: 'R&D', description: 'Research and Development', budget: 1500000 },
+      { name: 'Customer Service', description: 'Customer Support', budget: 400000 },
     ],
   });
 
