@@ -17,14 +17,14 @@ export class CreateDepartmentDto {
   @IsString()
   name: string;
 
-  @ApiProperty()
-  @IsString()
-  code: string;
-
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  manager?: string;
+  description?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  budget?: number;
 }
 
 export class SystemConfigDto {
