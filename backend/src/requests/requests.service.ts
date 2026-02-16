@@ -52,7 +52,7 @@ export class RequestsService {
   async findOne(id: number) {
     return this.prisma.movementRequest.findUnique({
       where: { id },
-      include: { items: true, user: true, approvals: true },
+      include: { items: true, user: true, approvals: { include: { approver: true } } },
     });
   }
 

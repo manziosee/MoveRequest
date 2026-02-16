@@ -172,8 +172,8 @@ export default function RequestDetails({ requestId }: RequestDetailsProps) {
 
   const totalCost = request.items.reduce((sum, item) => sum + (item.quantity * item.estimatedCost), 0);
   const canEdit = request.status === 'draft' || request.status === 'rejected';
-  const canCancel = (request.status === 'pending' || request.status === 'draft') && 
-                    user?.id === request.createdBy;
+  const canCancel = (request.status === 'pending' || request.status === 'draft') &&
+                    user?.id === request.userId;
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6 animate-fade-in">
@@ -243,10 +243,14 @@ export default function RequestDetails({ requestId }: RequestDetailsProps) {
                 <p className="font-medium text-foreground mt-1">{format(new Date(request.createdAt), 'PPP')}</p>
               </div>
             </div>
-            {request.approvedBy && (
+            {request.approvals && request.approvals.length > 0 && request.approvals.some((a: any) => a.status === 'approved') && (
               <div className="pt-3 border-t border-border">
                 <span className="text-sm font-medium text-muted-foreground">Approved By:</span>
-                <p className="font-medium text-foreground mt-1">Procurement Team</p>
+                {request.approvals.filter((a: any) => a.status === 'approved').map((a: any) => (
+                  <p key={a.id} className="font-medium text-foreground mt-1">
+                    {a.approver ? `${a.approver.firstName} ${a.approver.lastName}` : 'Procurement Team'}
+                  </p>
+                ))}
               </div>
             )}
           </CardContent>
@@ -361,8 +365,15 @@ export default function RequestDetails({ requestId }: RequestDetailsProps) {
         </Card>
       )}
 
-      {request.approvalHistory && request.approvalHistory.length > 0 && (
-        <ApprovalTimeline history={request.approvalHistory} />
+      {request.approvals && request.approvals.length > 0 && (
+        <ApprovalTimeline history={request.approvals.map((a: any) => ({
+          id: String(a.id),
+          action: a.status === 'approved' ? 'approved' : a.status === 'rejected' ? 'rejected' : 'submitted',
+          performedBy: String(a.approverId),
+          performedByName: a.approver ? `${a.approver.firstName} ${a.approver.lastName}` : 'Procurement Team',
+          timestamp: a.createdAt || new Date().toISOString(),
+          comment: a.comments,
+        }))} />
       )}
 
       {request.rejectionReason && (

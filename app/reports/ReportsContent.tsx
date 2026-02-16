@@ -271,6 +271,38 @@ export default function ReportsContent() {
             </CardContent>
           </Card>
         )}
+
+        {/* Priority Breakdown */}
+        {priorityBreakdown && (
+          <Card className="border-gray-200/60 shadow-sm lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-primary" />
+                Priority Breakdown
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[
+                  { label: 'High', value: priorityBreakdown.high || 0, color: 'bg-red-500' },
+                  { label: 'Medium', value: priorityBreakdown.medium || 0, color: 'bg-amber-500' },
+                  { label: 'Low', value: priorityBreakdown.low || 0, color: 'bg-green-500' },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${item.color}`} />
+                      <span className="text-sm font-medium">{item.label}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Progress value={stats?.total ? (item.value / stats.total) * 100 : 0} className="w-32" />
+                      <span className="text-sm text-muted-foreground w-12 text-right">{item.value}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Export Options */}

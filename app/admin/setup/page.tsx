@@ -47,19 +47,54 @@ const performanceData = [
 ];
 
 export default function AdminSetupPage() {
+  // General settings
+  const [companyName, setCompanyName] = useState('Acme Corporation');
+  const [timezone, setTimezone] = useState('UTC-5 (Eastern Time)');
+  const [currency, setCurrency] = useState('RWF');
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  // Notification settings
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
+  const [notificationEmail, setNotificationEmail] = useState('admin@company.com');
+  // Security settings
+  const [sessionTimeout, setSessionTimeout] = useState('30');
+  // Workflow settings
   const [autoApproval, setAutoApproval] = useState(false);
-  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [approvalThreshold, setApprovalThreshold] = useState('500000');
+  const [reviewPeriod, setReviewPeriod] = useState('3');
+  // Data
   const [systemStats, setSystemStats] = useState<any>(null);
   const [userActivity, setUserActivity] = useState<any>(null);
   const [backupInfo, setBackupInfo] = useState<any>(null);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [bulkApproving, setBulkApproving] = useState(false);
 
   useEffect(() => {
     fetchSystemStats();
     fetchUserActivity();
     fetchBackupInfo();
+    fetchSystemConfig();
   }, []);
+
+  const fetchSystemConfig = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const response = await api.getSystemConfig(token);
+      if (response.ok) {
+        const data = await response.json();
+        setCompanyName(data.companyName ?? 'Acme Corporation');
+        setTimezone(data.timezone ?? 'UTC-5 (Eastern Time)');
+        setCurrency(data.currency ?? 'RWF');
+        setMaintenanceMode(data.maintenanceMode ?? false);
+        setEmailNotifications(data.emailNotifications ?? true);
+        setAutoApproval(data.autoApproval ?? false);
+        if (data.approvalThreshold) setApprovalThreshold(String(data.approvalThreshold));
+      }
+    } catch (error) {
+      console.error('Error fetching system config:', error);
+    }
+  };
 
   const fetchSystemStats = async () => {
     const token = localStorage.getItem('token');
@@ -144,8 +179,66 @@ export default function AdminSetupPage() {
     }
   };
 
-  const handleSaveSettings = () => {
-    toast.success('Settings saved successfully!');
+  const handleSaveSettings = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    setSavingSettings(true);
+    try {
+      const response = await api.updateSystemConfig(token, {
+        companyName,
+        timezone,
+        currency,
+        maintenanceMode,
+        emailNotifications,
+        pushNotifications,
+        notificationEmail,
+        sessionTimeout: Number(sessionTimeout),
+        autoApproval,
+        approvalThreshold,
+        reviewPeriod: Number(reviewPeriod),
+      });
+      if (response.ok) {
+        toast.success('Settings saved successfully!');
+      } else {
+        toast.error('Failed to save settings');
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast.error('Failed to save settings');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    setBulkApproving(true);
+    try {
+      const requestsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/requests?status=pending`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!requestsRes.ok) throw new Error('Failed to fetch pending requests');
+      const pendingRequests = await requestsRes.json();
+      if (!pendingRequests.length) {
+        toast.info('No pending requests to approve');
+        return;
+      }
+      const ids = pendingRequests.map((r: any) => r.id);
+      const response = await api.bulkApproveRequestsAdmin(token, ids);
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(`${data.count} request(s) approved successfully`);
+        fetchSystemStats();
+      } else {
+        toast.error('Failed to bulk approve requests');
+      }
+    } catch (error) {
+      console.error('Error bulk approving:', error);
+      toast.error('Failed to bulk approve requests');
+    } finally {
+      setBulkApproving(false);
+    }
   };
 
   return (
@@ -158,9 +251,8 @@ export default function AdminSetupPage() {
               <h1 className="text-3xl font-bold text-foreground tracking-tight">System Configuration ⚙️</h1>
               <p className="text-muted-foreground mt-1">Configure system settings and preferences</p>
             </div>
-            <Button className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg shadow-primary/25 gap-2" onClick={handleSaveSettings}>
-              <CheckCircle className="h-4 w-4" />
-              Save Changes
+            <Button className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg shadow-primary/25 gap-2" onClick={handleSaveSettings} disabled={savingSettings}>
+              {savingSettings ? <><span className="animate-spin mr-1">⏳</span>Saving...</> : <><CheckCircle className="h-4 w-4" />Save Changes</>}
             </Button>
           </div>
 
@@ -551,9 +643,9 @@ export default function AdminSetupPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button variant="outline" size="sm" className="w-full justify-start">
+                <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleBulkApprove} disabled={bulkApproving}>
                   <FileText className="h-4 w-4 mr-2" />
-                  Bulk Approve Requests
+                  {bulkApproving ? 'Approving...' : 'Bulk Approve Requests'}
                 </Button>
                 <Button variant="outline" size="sm" className="w-full justify-start">
                   <Mail className="h-4 w-4 mr-2" />
@@ -611,15 +703,15 @@ export default function AdminSetupPage() {
               <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="company-name">Company Name</Label>
-                  <Input id="company-name" defaultValue="Acme Corporation" />
+                  <Input id="company-name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="timezone">Timezone</Label>
-                  <Input id="timezone" defaultValue="UTC-5 (Eastern Time)" />
+                  <Input id="timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="currency">Currency</Label>
-                  <Input id="currency" defaultValue="RWF" />
+                  <Input id="currency" value={currency} onChange={(e) => setCurrency(e.target.value)} />
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">
@@ -679,10 +771,11 @@ export default function AdminSetupPage() {
                 <Separator />
                 <div className="space-y-2">
                   <Label htmlFor="notification-email">Notification Email</Label>
-                  <Input 
-                    id="notification-email" 
+                  <Input
+                    id="notification-email"
                     type="email"
-                    defaultValue="admin@company.com" 
+                    value={notificationEmail}
+                    onChange={(e) => setNotificationEmail(e.target.value)}
                   />
                 </div>
               </CardContent>
@@ -705,7 +798,7 @@ export default function AdminSetupPage() {
                 <div className="space-y-2">
                   <Label>Session Timeout</Label>
                   <div className="flex items-center gap-2">
-                    <Input type="number" defaultValue="30" className="w-24" />
+                    <Input type="number" value={sessionTimeout} onChange={(e) => setSessionTimeout(e.target.value)} className="w-24" />
                     <span className="text-sm text-muted-foreground">minutes</span>
                   </div>
                 </div>
@@ -773,14 +866,14 @@ export default function AdminSetupPage() {
                   <Label>Approval Threshold</Label>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">RWF</span>
-                    <Input type="number" defaultValue="500000" className="flex-1" />
+                    <Input type="number" value={approvalThreshold} onChange={(e) => setApprovalThreshold(e.target.value)} className="flex-1" />
                   </div>
                 </div>
                 <Separator />
                 <div className="space-y-2">
                   <Label>Review Period</Label>
                   <div className="flex items-center gap-2">
-                    <Input type="number" defaultValue="3" className="w-24" />
+                    <Input type="number" value={reviewPeriod} onChange={(e) => setReviewPeriod(e.target.value)} className="w-24" />
                     <span className="text-sm text-muted-foreground">business days</span>
                   </div>
                 </div>

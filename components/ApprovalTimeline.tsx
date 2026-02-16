@@ -3,8 +3,16 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, FileText, Send, Clock, Ban } from 'lucide-react';
-import { ApprovalHistory } from '@/lib/mockData';
 import { format } from 'date-fns';
+
+interface ApprovalHistory {
+  id: string;
+  action: 'created' | 'submitted' | 'approved' | 'rejected' | 'cancelled' | 'updated';
+  performedBy: string;
+  performedByName: string;
+  timestamp: string;
+  comment?: string;
+}
 
 interface ApprovalTimelineProps {
   history: ApprovalHistory[];
