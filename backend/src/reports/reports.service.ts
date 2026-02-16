@@ -16,9 +16,26 @@ export class ReportsService {
   }
 
   async getMonthlyTrends() {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    const data = [45, 52, 61, 58, 67, 73];
-    return months.map((month, i) => ({ month, count: data[i] }));
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const now = new Date();
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+    const requests = await this.prisma.movementRequest.findMany({
+      where: { createdAt: { gte: sixMonthsAgo } },
+      select: { createdAt: true },
+    });
+
+    const counts: Record<string, number> = {};
+    requests.forEach((req) => {
+      const key = `${req.createdAt.getFullYear()}-${req.createdAt.getMonth()}`;
+      counts[key] = (counts[key] || 0) + 1;
+    });
+
+    return Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      return { month: monthNames[d.getMonth()], count: counts[key] || 0 };
+    });
   }
 
   async getDepartmentStats() {

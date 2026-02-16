@@ -12,6 +12,7 @@ import { Plus, Search, Filter, Eye, FileText, Clock, CheckCircle, XCircle, Trend
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Request {
   id: number;
@@ -26,6 +27,8 @@ interface Request {
 }
 
 export default function RequestsList() {
+  const { user } = useAuth();
+  const canCreateRequest = user?.role === 'employee';
   const [requests, setRequests] = useState<Request[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<Request[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -121,12 +124,14 @@ export default function RequestsList() {
           <h1 className="text-3xl font-bold text-foreground tracking-tight">Movement Requests 📦</h1>
           <p className="text-muted-foreground mt-1">Manage your movement and procurement requests</p>
         </div>
-        <Link href="/requests/new">
-          <Button className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg shadow-primary/25 gap-2">
-            <Plus className="h-4 w-4" />
-            New Request
-          </Button>
-        </Link>
+        {canCreateRequest && (
+          <Link href="/requests/new">
+            <Button className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg shadow-primary/25 gap-2">
+              <Plus className="h-4 w-4" />
+              New Request
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -347,7 +352,7 @@ export default function RequestsList() {
                   : 'Create your first request to get started'
                 }
               </p>
-              {!searchTerm && statusFilter === 'all' && (
+              {!searchTerm && statusFilter === 'all' && canCreateRequest && (
                 <Link href="/requests/new">
                   <Button className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90">
                     <Plus className="mr-2 h-4 w-4" />

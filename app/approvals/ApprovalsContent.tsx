@@ -30,10 +30,10 @@ interface Request {
   items: Array<{
     id: number;
     name: string;
+    category: string;
     quantity: number;
-    unitPrice: number;
-    totalPrice: number;
-    specifications: string;
+    unit: string;
+    estimatedCost: number;
   }>;
 }
 
@@ -236,7 +236,7 @@ export default function ApprovalsContent() {
                           {request.priority}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-mono">{request.totalAmount.toLocaleString()} RWF</TableCell>
+                      <TableCell className="font-mono">{(request.totalAmount ?? 0).toLocaleString()} RWF</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
                       </TableCell>
@@ -342,21 +342,19 @@ export default function ApprovalsContent() {
                           <TableCell>
                             <div>
                               <p className="font-medium">{item.name}</p>
-                              {item.specifications && (
-                                <p className="text-xs text-muted-foreground">{item.specifications}</p>
-                              )}
+                              <p className="text-xs text-muted-foreground">{item.category} · {item.unit}</p>
                             </div>
                           </TableCell>
                           <TableCell>{item.quantity}</TableCell>
-                          <TableCell className="font-mono">{item.unitPrice.toLocaleString()} RWF</TableCell>
-                          <TableCell className="font-mono font-medium">{item.totalPrice.toLocaleString()} RWF</TableCell>
+                          <TableCell className="font-mono">{(item.estimatedCost ?? 0).toLocaleString()} RWF</TableCell>
+                          <TableCell className="font-mono font-medium">{((item.estimatedCost ?? 0) * item.quantity).toLocaleString()} RWF</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </div>
                 <div className="text-right mt-3 text-lg font-bold">
-                  Total: {selectedRequest.totalAmount.toLocaleString()} RWF
+                  Total: {(selectedRequest.totalAmount ?? 0).toLocaleString()} RWF
                 </div>
               </div>
             </div>

@@ -490,7 +490,7 @@ export default function NewRequestForm() {
                     Add Item
                   </Button>
                   <div className="text-lg font-semibold">
-                    Total: ${getTotalCost().toFixed(2)}
+                    Total: {getTotalCost().toLocaleString()} RWF
                   </div>
                 </div>
               </div>
@@ -554,14 +554,14 @@ export default function NewRequestForm() {
                           <TableCell>{item.name}</TableCell>
                           <TableCell>{item.category}</TableCell>
                           <TableCell>{item.quantity} {item.unit}</TableCell>
-                          <TableCell>${(item.quantity * item.estimatedCost).toFixed(2)}</TableCell>
+                          <TableCell>{(item.quantity * item.estimatedCost).toLocaleString()} RWF</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </div>
                 <div className="text-right mt-2 font-semibold">
-                  Total Estimated Cost: ${getTotalCost().toFixed(2)}
+                  Total Estimated Cost: {getTotalCost().toLocaleString()} RWF
                 </div>
               </div>
             </CardContent>

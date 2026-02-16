@@ -128,7 +128,7 @@ export class AdminService {
   async getBackupInfo() {
     return {
       lastBackup: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      nextScheduled: new Date().setHours(2, 0, 0, 0),
+      nextScheduled: (() => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(4, 0, 0, 0); return d.toISOString(); })(),
       backupSize: '2.4 GB',
       status: 'healthy',
     };
