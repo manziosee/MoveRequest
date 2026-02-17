@@ -4,13 +4,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Plus, FileText, Clock, CheckCircle, XCircle, 
-  TrendingUp, Users, Package, Building2, Loader2
+import {
+  Plus, FileText, Clock, CheckCircle, XCircle,
+  TrendingUp, Users, Package, Building2, Loader2, BarChart3, Activity
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area,
+} from 'recharts';
 
 export default function DashboardContent() {
   const { user } = useAuth();
@@ -227,12 +231,17 @@ export default function DashboardContent() {
     </div>
   );
 
+  const STATUS_COLORS = ['#f59e0b', '#22c55e', '#ef4444'];
+  const ROLE_COLORS = ['#3b82f6', '#8b5cf6', '#06b6d4'];
+
   const AdminDashboard = () => (
     <div className="space-y-6 animate-fade-in">
       <div className="bg-gradient-to-r from-[#3D4B6E] to-[#2E3A54] rounded-xl p-6 shadow-lg">
         <h1 className="text-2xl lg:text-3xl font-bold text-white">System Overview</h1>
+        <p className="text-white/70 text-sm mt-1">Real-time system analytics and management</p>
       </div>
 
+      {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <Card className="border-gray-200/60 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-4">
@@ -241,6 +250,7 @@ export default function DashboardContent() {
               <Users className="h-4 w-4 text-cyan-600" />
             </div>
             <p className="text-2xl font-bold text-cyan-600">{stats.totalUsers || 0}</p>
+            <p className="text-xs text-muted-foreground mt-1">{stats.activeUsers || 0} active</p>
           </CardContent>
         </Card>
 
@@ -261,6 +271,17 @@ export default function DashboardContent() {
               <FileText className="h-4 w-4 text-blue-600" />
             </div>
             <p className="text-2xl font-bold text-blue-600">{stats.totalRequests || 0}</p>
+            <p className="text-xs text-muted-foreground mt-1">{stats.pending || 0} pending</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-gray-200/60 shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-muted-foreground font-medium">Approval Rate</p>
+              <CheckCircle className="h-4 w-4 text-green-600" />
+            </div>
+            <p className="text-2xl font-bold text-green-600">{stats.approvalRate || 0}%</p>
           </CardContent>
         </Card>
 
@@ -268,19 +289,9 @@ export default function DashboardContent() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs text-muted-foreground font-medium">Categories</p>
-              <Package className="h-4 w-4 text-green-600" />
+              <Package className="h-4 w-4 text-orange-600" />
             </div>
-            <p className="text-2xl font-bold text-green-600">{stats.categories || 0}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-gray-200/60 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs text-muted-foreground font-medium">Locations</p>
-              <Building2 className="h-4 w-4 text-orange-600" />
-            </div>
-            <p className="text-2xl font-bold text-orange-600">{stats.locations || 0}</p>
+            <p className="text-2xl font-bold text-orange-600">{stats.categories || 0}</p>
           </CardContent>
         </Card>
 
@@ -288,13 +299,149 @@ export default function DashboardContent() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs text-muted-foreground font-medium">System Health</p>
-              <CheckCircle className="h-4 w-4 text-emerald-600" />
+              <Activity className="h-4 w-4 text-emerald-600" />
             </div>
             <p className="text-2xl font-bold text-emerald-600">{stats.systemHealth || 0}%</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Charts Row 1: Monthly Trends + Request Status */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="border-gray-200/60 shadow-sm lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Monthly Request Trends
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {stats.monthlyTrends && stats.monthlyTrends.length > 0 ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={stats.monthlyTrends}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                  <Tooltip />
+                  <Legend />
+                  <Area type="monotone" dataKey="total" name="Total" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.1} strokeWidth={2} />
+                  <Area type="monotone" dataKey="approved" name="Approved" stroke="#22c55e" fill="#22c55e" fillOpacity={0.1} strokeWidth={2} />
+                  <Area type="monotone" dataKey="rejected" name="Rejected" stroke="#ef4444" fill="#ef4444" fillOpacity={0.05} strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[280px] text-muted-foreground text-sm">No trend data available yet</div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-gray-200/60 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-base">Request Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {stats.statusDistribution && stats.statusDistribution.some((s: any) => s.value > 0) ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={stats.statusDistribution}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={4}
+                    dataKey="value"
+                  >
+                    {stats.statusDistribution.map((_: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={STATUS_COLORS[index % STATUS_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[220px] text-muted-foreground text-sm">No requests yet</div>
+            )}
+            <div className="flex justify-center gap-4 mt-2">
+              {(stats.statusDistribution || []).map((item: any, i: number) => (
+                <div key={item.name} className="flex items-center gap-1.5 text-xs">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: STATUS_COLORS[i] }} />
+                  <span className="text-muted-foreground">{item.name}</span>
+                  <span className="font-semibold">{item.value}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Row 2: Department Activity + User Roles */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="border-gray-200/60 shadow-sm lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Requests by Department
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {stats.departmentActivity && stats.departmentActivity.length > 0 ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={stats.departmentActivity} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis type="number" tick={{ fontSize: 12 }} allowDecimals={false} />
+                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={100} />
+                  <Tooltip />
+                  <Bar dataKey="requests" name="Requests" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[280px] text-muted-foreground text-sm">No department data available</div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-gray-200/60 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-base">User Roles</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {stats.roleDistribution && stats.roleDistribution.some((r: any) => r.value > 0) ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={stats.roleDistribution}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={4}
+                    dataKey="value"
+                  >
+                    {stats.roleDistribution.map((_: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={ROLE_COLORS[index % ROLE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[220px] text-muted-foreground text-sm">No user data</div>
+            )}
+            <div className="flex justify-center gap-4 mt-2">
+              {(stats.roleDistribution || []).map((item: any, i: number) => (
+                <div key={item.name} className="flex items-center gap-1.5 text-xs">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ROLE_COLORS[i] }} />
+                  <span className="text-muted-foreground">{item.name}</span>
+                  <span className="font-semibold">{item.value}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Management Actions */}
       <Card className="border-gray-200/60 shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">Quick Management Actions</CardTitle>

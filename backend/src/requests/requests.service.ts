@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { EmailService } from '../common/email.service';
 
 @Injectable()
 export class RequestsService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    private emailService: EmailService,
   ) {}
 
   async create(data: any, userId: number) {
@@ -24,14 +26,31 @@ export class RequestsService {
       where: { role: 'procurement', isActive: true },
     });
 
+    const employeeName = `${request.user.firstName} ${request.user.lastName}`;
+
     for (const procUser of procurementUsers) {
       await this.notificationsService.createNotification(
         procUser.id,
         'info',
         'New Request Submitted',
-        `${request.user.firstName} ${request.user.lastName} submitted a new request: ${request.title}`,
+        `${employeeName} submitted a new request: ${request.title}`,
+      );
+
+      // Send email notification to procurement user
+      await this.emailService.sendNewRequestNotification(
+        procUser.email,
+        request.title,
+        request.id,
+        employeeName,
       );
     }
+
+    // Send confirmation email to the employee
+    await this.emailService.sendRequestSubmittedEmail(
+      request.user.email,
+      request.title,
+      request.id,
+    );
 
     return request;
   }

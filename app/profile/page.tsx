@@ -7,8 +7,19 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { User, Mail, Briefcase, Shield, Edit, Key, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 
@@ -16,10 +27,23 @@ export default function ProfilePage() {
   const { user } = useAuth();
   const [activities, setActivities] = useState<any[]>([]);
   const [loadingActivity, setLoadingActivity] = useState(true);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editForm, setEditForm] = useState({ firstName: '', lastName: '', department: '' });
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     loadActivity();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      setEditForm({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        department: user.department || '',
+      });
+    }
+  }, [user]);
 
   const loadActivity = async () => {
     try {
@@ -54,6 +78,34 @@ export default function ProfilePage() {
     if (action.includes('request') || action.includes('Request')) return 'bg-amber-100 text-amber-700';
     if (action.includes('approv') || action.includes('Approv')) return 'bg-green-100 text-green-700';
     return 'bg-gray-100 text-gray-700';
+  };
+
+  const handleEditProfile = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    setEditLoading(true);
+    try {
+      const response = await api.updateProfile(token, {
+        firstName: editForm.firstName,
+        lastName: editForm.lastName,
+        department: editForm.department || null,
+      });
+      if (response.ok) {
+        toast.success('Profile updated successfully');
+        setShowEditDialog(false);
+        // Reload page to reflect changes in the auth context
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -106,7 +158,7 @@ export default function ProfilePage() {
                   >
                     {user?.role.toUpperCase()}
                   </Badge>
-                  <Button variant="outline" className="w-full gap-2 mt-4">
+                  <Button variant="outline" className="w-full gap-2 mt-4" onClick={() => setShowEditDialog(true)}>
                     <Edit className="h-4 w-4" />
                     Edit Profile
                   </Button>
@@ -197,7 +249,7 @@ export default function ProfilePage() {
                   {activities.map((activity, index) => {
                     const timestamp = activity.timestamp ? new Date(activity.timestamp) : null;
                     const isValidDate = timestamp && !isNaN(timestamp.getTime());
-                    
+
                     return (
                       <div key={index} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors border border-border/30">
                         <div className="flex items-center space-x-3">
@@ -207,13 +259,18 @@ export default function ProfilePage() {
                           <div>
                             <p className="font-medium text-sm text-foreground">{activity.action}</p>
                             <p className="text-xs text-muted-foreground">
-                              {isValidDate 
+                              {isValidDate
                                 ? formatDistanceToNow(timestamp, { addSuffix: true })
-                                : 'Recently'
+                                : 'Never'
                               }
                             </p>
                           </div>
                         </div>
+                        {isValidDate && (
+                          <p className="text-xs text-muted-foreground hidden sm:block">
+                            {timestamp.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        )}
                       </div>
                     );
                   })}
@@ -221,6 +278,51 @@ export default function ProfilePage() {
               )}
             </CardContent>
           </Card>
+          {/* Edit Profile Dialog */}
+          <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+            <DialogContent className="sm:max-w-[450px]">
+              <DialogHeader>
+                <DialogTitle>Edit Profile</DialogTitle>
+                <DialogDescription>Update your personal information</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="editFirstName">First Name</Label>
+                  <Input
+                    id="editFirstName"
+                    value={editForm.firstName}
+                    onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="editLastName">Last Name</Label>
+                  <Input
+                    id="editLastName"
+                    value={editForm.lastName}
+                    onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="editDepartment">Department</Label>
+                  <Input
+                    id="editDepartment"
+                    value={editForm.department}
+                    onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancel</Button>
+                <Button
+                  onClick={handleEditProfile}
+                  disabled={editLoading || !editForm.firstName.trim() || !editForm.lastName.trim()}
+                >
+                  {editLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save Changes
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </DashboardLayout>
     </ProtectedRoute>
