@@ -43,7 +43,12 @@ export class UsersService {
   }
 
   async updateProfile(id: number, updateData: any) {
-    await this.prisma.user.update({ where: { id }, data: updateData });
+    const { firstName, lastName, department } = updateData;
+    const safeData: any = {};
+    if (firstName !== undefined) safeData.firstName = firstName;
+    if (lastName !== undefined) safeData.lastName = lastName;
+    if (department !== undefined) safeData.department = department;
+    await this.prisma.user.update({ where: { id }, data: safeData });
     return this.findOne(id);
   }
 
@@ -60,7 +65,10 @@ export class UsersService {
 
   async changePassword(id: number, newPassword: string) {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await this.prisma.user.update({ where: { id }, data: { password: hashedPassword } });
+    await this.prisma.user.update({
+      where: { id },
+      data: { password: hashedPassword, passwordChangedAt: new Date() },
+    });
     return { message: 'Password updated successfully' };
   }
 
@@ -75,11 +83,33 @@ export class UsersService {
   }
 
   async getActivityHistory(userId: number) {
-    return [
-      { action: 'Logged in', time: new Date(Date.now() - 2 * 60 * 60 * 1000), type: 'login' },
-      { action: 'Profile viewed', time: new Date(Date.now() - 24 * 60 * 60 * 1000), type: 'view' },
-      { action: 'Password changed', time: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), type: 'security' },
-    ];
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { lastLogin: true, passwordChangedAt: true, createdAt: true, updatedAt: true },
+    });
+    if (!user) return [];
+
+    const activities: { action: string; timestamp: string | null; type: string }[] = [];
+
+    activities.push({
+      action: 'Logged in',
+      timestamp: user.lastLogin ? user.lastLogin.toISOString() : null,
+      type: 'login',
+    });
+
+    activities.push({
+      action: 'Password changed',
+      timestamp: user.passwordChangedAt ? user.passwordChangedAt.toISOString() : null,
+      type: 'security',
+    });
+
+    activities.push({
+      action: 'Account created',
+      timestamp: user.createdAt.toISOString(),
+      type: 'account',
+    });
+
+    return activities;
   }
 
   async findByEmail(email: string) {

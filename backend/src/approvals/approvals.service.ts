@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { EmailService } from '../common/email.service';
 
 @Injectable()
 export class ApprovalsService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    private emailService: EmailService,
   ) {}
 
   async getPendingRequests() {
@@ -35,13 +37,16 @@ export class ApprovalsService {
 
     if (!request) throw new Error('Request not found');
 
-    await this.prisma.movementRequest.update({ 
-      where: { id: requestId }, 
-      data: { status: 'approved' } 
+    const approver = await this.prisma.user.findUnique({ where: { id: approverId } });
+    const approverName = approver ? `${approver.firstName} ${approver.lastName}` : 'Procurement Team';
+
+    await this.prisma.movementRequest.update({
+      where: { id: requestId },
+      data: { status: 'approved' }
     });
-    
-    await this.prisma.approval.create({ 
-      data: { requestId, approverId, status: 'approved', comments: comment } 
+
+    await this.prisma.approval.create({
+      data: { requestId, approverId, status: 'approved', comments: comment }
     });
 
     // Notify the requester with real-time notification
@@ -52,9 +57,18 @@ export class ApprovalsService {
       `Your request "${request.title}" has been approved.${comment ? ` Comment: ${comment}` : ''}`,
     );
 
-    return this.prisma.movementRequest.findUnique({ 
-      where: { id: requestId }, 
-      include: { items: true, user: true } 
+    // Send approval email to the employee
+    await this.emailService.sendRequestApprovedEmail(
+      request.user.email,
+      request.title,
+      request.id,
+      approverName,
+      comment,
+    );
+
+    return this.prisma.movementRequest.findUnique({
+      where: { id: requestId },
+      include: { items: true, user: true }
     });
   }
 
@@ -66,13 +80,16 @@ export class ApprovalsService {
 
     if (!request) throw new Error('Request not found');
 
-    await this.prisma.movementRequest.update({ 
-      where: { id: requestId }, 
-      data: { status: 'rejected' } 
+    const approver = await this.prisma.user.findUnique({ where: { id: approverId } });
+    const approverName = approver ? `${approver.firstName} ${approver.lastName}` : 'Procurement Team';
+
+    await this.prisma.movementRequest.update({
+      where: { id: requestId },
+      data: { status: 'rejected' }
     });
-    
-    await this.prisma.approval.create({ 
-      data: { requestId, approverId, status: 'rejected', comments: reason } 
+
+    await this.prisma.approval.create({
+      data: { requestId, approverId, status: 'rejected', comments: reason }
     });
 
     // Notify the requester with real-time notification
@@ -83,9 +100,18 @@ export class ApprovalsService {
       `Your request "${request.title}" has been rejected. Reason: ${reason}`,
     );
 
-    return this.prisma.movementRequest.findUnique({ 
-      where: { id: requestId }, 
-      include: { items: true, user: true } 
+    // Send rejection email to the employee
+    await this.emailService.sendRequestRejectedEmail(
+      request.user.email,
+      request.title,
+      request.id,
+      approverName,
+      reason,
+    );
+
+    return this.prisma.movementRequest.findUnique({
+      where: { id: requestId },
+      include: { items: true, user: true }
     });
   }
 

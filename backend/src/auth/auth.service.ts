@@ -22,6 +22,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // Record login timestamp
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLogin: new Date() },
+    });
+
     const payload = { sub: user.id, email: user.email, role: user.role };
     return {
       access_token: this.jwtService.sign(payload),
@@ -100,7 +106,10 @@ export class AuthService {
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
-      await this.prisma.user.update({ where: { id: user.id }, data: { password: hashedPassword } });
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { password: hashedPassword, passwordChangedAt: new Date() },
+      });
 
       return { message: 'Password reset successfully' };
     } catch (error) {
@@ -116,7 +125,10 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await this.prisma.user.update({ where: { id: userId }, data: { password: hashedPassword } });
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword, passwordChangedAt: new Date() },
+    });
 
     return { message: 'Password changed successfully' };
   }

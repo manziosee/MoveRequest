@@ -84,6 +84,11 @@ export default function AdminUsersPage() {
     role: 'employee',
     department: ''
   });
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [showRoleDialog, setShowRoleDialog] = useState(false);
+  const [newRole, setNewRole] = useState('');
+  const [roleLoading, setRoleLoading] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -164,6 +169,31 @@ export default function AdminUsersPage() {
     } catch (error) {
       console.error('Error toggling user status:', error);
       toast.error('Failed to update user status');
+    }
+  };
+
+  const handleChangeRole = async () => {
+    if (!selectedUser || !newRole) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    setRoleLoading(true);
+    try {
+      const response = await api.updateUserRole(token, selectedUser.id.toString(), newRole);
+      if (response.ok) {
+        toast.success(`Role updated to ${newRole}`);
+        setShowRoleDialog(false);
+        setSelectedUser(null);
+        fetchUsers();
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Failed to update role');
+      }
+    } catch (error) {
+      console.error('Error changing role:', error);
+      toast.error('Failed to update role');
+    } finally {
+      setRoleLoading(false);
     }
   };
 
@@ -373,15 +403,22 @@ export default function AdminUsersPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedUser(user);
+                                setShowProfileDialog(true);
+                              }}>
                                 <UserCheck className="mr-2 h-4 w-4" />
                                 View Profile
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedUser(user);
+                                setNewRole(user.role);
+                                setShowRoleDialog(true);
+                              }}>
                                 <Shield className="mr-2 h-4 w-4" />
                                 Change Role
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 className="text-destructive"
                                 onClick={() => handleToggleActive(user.id)}
                               >
@@ -397,6 +434,98 @@ export default function AdminUsersPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* View Profile Dialog */}
+          <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
+            <DialogContent className="sm:max-w-[450px]">
+              <DialogHeader>
+                <DialogTitle>User Profile</DialogTitle>
+                <DialogDescription>Details for {selectedUser?.firstName} {selectedUser?.lastName}</DialogDescription>
+              </DialogHeader>
+              {selectedUser && (
+                <div className="space-y-4 py-4">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-16 w-16 ring-2 ring-primary/20">
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-lg font-semibold">
+                        {selectedUser.firstName[0]}{selectedUser.lastName[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-lg font-semibold">{selectedUser.firstName} {selectedUser.lastName}</p>
+                      <Badge variant="outline" className={getRoleBadge(selectedUser.role)}>{selectedUser.role}</Badge>
+                    </div>
+                  </div>
+                  <div className="grid gap-3 text-sm">
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Email:</span>
+                      <span className="font-medium ml-auto">{selectedUser.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Department:</span>
+                      <span className="font-medium ml-auto">{selectedUser.department || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+                      <Activity className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Status:</span>
+                      <Badge variant="outline" className={`ml-auto ${getStatusBadge(selectedUser.isActive)}`}>
+                        {selectedUser.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Joined:</span>
+                      <span className="font-medium ml-auto">{new Date(selectedUser.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowProfileDialog(false)}>Close</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Change Role Dialog */}
+          <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
+            <DialogContent className="sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>Change User Role</DialogTitle>
+                <DialogDescription>
+                  Update role for {selectedUser?.firstName} {selectedUser?.lastName}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4 space-y-4">
+                <div className="grid gap-2">
+                  <Label>Current Role</Label>
+                  <Badge variant="outline" className={`w-fit ${getRoleBadge(selectedUser?.role || '')}`}>
+                    {selectedUser?.role}
+                  </Badge>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="newRole">New Role</Label>
+                  <Select value={newRole} onValueChange={setNewRole}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select new role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="employee">Employee</SelectItem>
+                      <SelectItem value="procurement">Procurement</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowRoleDialog(false)}>Cancel</Button>
+                <Button onClick={handleChangeRole} disabled={roleLoading || newRole === selectedUser?.role}>
+                  {roleLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Update Role
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* Add User Dialog */}
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>

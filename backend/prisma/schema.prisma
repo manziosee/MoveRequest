@@ -14,9 +14,11 @@ model User {
   lastName  String
   role      String   @default("employee")
   department String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isActive          Boolean   @default(true)
+  lastLogin         DateTime?
+  passwordChangedAt DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   requests      MovementRequest[]
   approvals     Approval[]
